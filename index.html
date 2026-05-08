@@ -1,0 +1,1509 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1677ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>分析看板</title>
+  <style>
+    :root {
+      --primary: #1677ff;
+      --primary-hover: #4096ff;
+      --bg: #f5f5f5;
+      --card: #ffffff;
+      --text: #1f1f1f;
+      --muted: #8c8c8c;
+      --border: #d9d9d9;
+      --success: #52c41a;
+      --danger: #ff4d4f;
+      --blue: #1677ff;
+      --green: #52c41a;
+      --red: #ff4d4f;
+      --warning-bg: #fff7e6;
+      --warning-border: #ffd591;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+      -webkit-text-size-adjust: 100%;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      background: #fff;
+      border-bottom: 1px solid #f0f0f0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    }
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 650;
+    }
+    h2 {
+      margin: 0 0 16px;
+      font-size: 18px;
+      font-weight: 650;
+    }
+    h3 {
+      margin: 0 0 12px;
+      font-size: 15px;
+      font-weight: 650;
+    }
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 24px;
+      align-items: start;
+    }
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+    .grid.cards {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid #f0f0f0;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 1px 2px rgba(0,0,0,.03);
+    }
+    .metric .label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .metric .value {
+      margin-top: 8px;
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .metric .sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #f0f0f0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+    .tab {
+      padding: 10px 14px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: #595959;
+      cursor: pointer;
+      font-size: 14px;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      font-weight: 600;
+    }
+    button, .file-label {
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 4px 15px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    button.primary {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+    }
+    button.primary:hover {
+      border-color: var(--primary-hover);
+      background: var(--primary-hover);
+    }
+    button.danger {
+      color: var(--danger);
+      border-color: #ffccc7;
+    }
+    input, select, textarea {
+      width: 100%;
+      min-height: 36px;
+      padding: 5px 11px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+    textarea {
+      min-height: 78px;
+      resize: vertical;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary-hover);
+      box-shadow: 0 0 0 2px rgba(5,145,255,.12);
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #595959;
+      font-size: 13px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .notice {
+      margin-bottom: 16px;
+      padding: 10px 12px;
+      border: 1px solid var(--warning-border);
+      border-radius: 8px;
+      background: var(--warning-bg);
+      color: #874d00;
+      font-size: 13px;
+    }
+    .top-filter {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+      padding: 16px 20px;
+      border: 1px solid #f0f0f0;
+      border-radius: 8px;
+      background: #fff;
+    }
+    .top-filter .filter-title {
+      font-size: 15px;
+      font-weight: 650;
+    }
+    .top-filter .filter-control {
+      width: 180px;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      border: 1px solid #d9d9d9;
+      background: #fafafa;
+      color: #595959;
+      white-space: nowrap;
+    }
+    .tag.red { color: #cf1322; border-color: #ffa39e; background: #fff1f0; }
+    .tag.blue { color: #0958d9; border-color: #91caff; background: #e6f4ff; }
+    .tag.green { color: #389e0d; border-color: #b7eb8f; background: #f6ffed; }
+    .tag.neutral { color: #595959; border-color: #d9d9d9; background: #fafafa; }
+    .status-list {
+      display: grid;
+      gap: 10px;
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 56px 1fr 42px;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+      margin: 8px 0;
+    }
+    .bar-bg {
+      height: 8px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: #f0f0f0;
+    }
+    .bar {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--primary);
+    }
+    .bar.red { background: var(--red); }
+    .bar.blue { background: var(--blue); }
+    .bar.green { background: var(--green); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #f0f0f0;
+      text-align: left;
+      vertical-align: middle;
+    }
+    th {
+      color: #595959;
+      background: #fafafa;
+      font-weight: 600;
+    }
+    tr:hover td { background: #fafafa; }
+    .table-wrap {
+      overflow: auto;
+      max-height: 520px;
+      border: 1px solid #f0f0f0;
+      border-radius: 8px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .table-wrap table {
+      min-width: 760px;
+    }
+    #referencePanel .table-wrap table {
+      min-width: 520px;
+    }
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .analysis-card {
+      border: 1px solid #f0f0f0;
+      border-radius: 8px;
+      padding: 14px;
+      background: #fff;
+    }
+    .analysis-card strong {
+      font-size: 22px;
+    }
+    .kv {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+    .kv span:nth-child(odd) {
+      color: var(--muted);
+    }
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .hidden { display: none; }
+    .danger-text { color: var(--danger); }
+    .success-text { color: var(--success); }
+    .record-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin: 12px 0;
+    }
+    .footer-note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .inline-tags {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+    .reference-table td {
+      line-height: 1.8;
+    }
+    .number-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 42px;
+      height: 24px;
+      margin: 2px 4px 2px 0;
+      border-radius: 4px;
+      font-size: 12px;
+      border: 1px solid #d9d9d9;
+      background: #fafafa;
+    }
+    .number-chip.red { color: #cf1322; border-color: #ffa39e; background: #fff1f0; }
+    .number-chip.blue { color: #0958d9; border-color: #91caff; background: #e6f4ff; }
+    .number-chip.green { color: #389e0d; border-color: #b7eb8f; background: #f6ffed; }
+    .duplicate-row td {
+      background: #fffbe6 !important;
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, .45);
+    }
+    .modal-backdrop.open {
+      display: flex;
+    }
+    .modal {
+      width: min(560px, 100%);
+      max-height: calc(100vh - 40px);
+      overflow: auto;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,.18);
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .modal-header h2 {
+      margin: 0;
+    }
+    .modal-body {
+      padding: 20px;
+    }
+    .icon-button {
+      width: 32px;
+      min-width: 32px;
+      padding: 0;
+      font-size: 20px;
+      line-height: 1;
+    }
+    @media (max-width: 1120px) {
+      .layout { grid-template-columns: 1fr; }
+      .grid.cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 720px) {
+      body { background: #fff; }
+      header {
+        position: static;
+        height: auto;
+        min-height: 56px;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 16px;
+        flex-direction: column;
+      }
+      h1 { font-size: 18px; }
+      h2 { font-size: 17px; }
+      h3 { font-size: 14px; }
+      main { padding: 12px; }
+      .card {
+        padding: 14px;
+        border-radius: 8px;
+        box-shadow: none;
+      }
+      .notice {
+        margin-bottom: 12px;
+        font-size: 12px;
+      }
+      .top-filter {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 12px;
+        padding: 14px;
+      }
+      .top-filter .filter-control {
+        width: 100%;
+      }
+      .layout {
+        gap: 12px;
+      }
+      .grid {
+        gap: 12px;
+      }
+      .grid.cards, .grid.two, .analysis-grid, .form-row { grid-template-columns: 1fr; }
+      .grid.cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .grid.cards .card {
+        padding: 12px;
+      }
+      .metric .value {
+        font-size: 16px;
+        line-height: 1.25;
+        word-break: break-word;
+      }
+      .metric .label,
+      .metric .sub {
+        font-size: 12px;
+      }
+      .toolbar {
+        width: 100%;
+        gap: 6px;
+      }
+      button, .file-label {
+        min-height: 40px;
+        flex: 1;
+      }
+      input, select, textarea {
+        min-height: 40px;
+        font-size: 16px;
+      }
+      textarea {
+        min-height: 112px;
+      }
+      .tabs {
+        margin: -2px -14px 14px;
+        padding: 0 14px;
+      }
+      .tab {
+        min-height: 42px;
+        padding: 10px 10px;
+      }
+      .record-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .record-actions input {
+        max-width: none !important;
+      }
+      .bar-row {
+        grid-template-columns: 54px minmax(0, 1fr) 64px;
+        gap: 8px;
+      }
+      .kv {
+        grid-template-columns: 76px 1fr;
+      }
+      .table-wrap {
+        max-height: none;
+      }
+      .modal-backdrop {
+        align-items: flex-end;
+        padding: 0;
+      }
+      .modal {
+        width: 100%;
+        max-height: 92vh;
+        border-radius: 12px 12px 0 0;
+      }
+      .modal-header,
+      .modal-body {
+        padding: 14px;
+      }
+    }
+    @media (max-width: 420px) {
+      .tag {
+        max-width: 100%;
+      }
+      .bar-row {
+        grid-template-columns: 48px minmax(0, 1fr) 58px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>分析看板</h1>
+    <div class="toolbar">
+      <span class="tag neutral">版本 2026-05-08-mobile2</span>
+      <span class="tag" id="dataStatus">本地数据</span>
+      <button id="openAddModalBtn" class="primary">新增一期</button>
+      <button id="resetBtn" class="danger">恢复初始数据</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="notice">本工具只基于历史记录做统计分析，不承诺中奖，也不保证任何号码未来会出现。</div>
+    <section class="layout">
+      <div class="grid">
+        <div class="grid cards" id="metrics"></div>
+
+        <div class="card">
+          <div class="tabs">
+            <button class="tab active" data-tab="dashboard">趋势看板</button>
+            <button class="tab" data-tab="records">开奖记录</button>
+            <button class="tab" data-tab="analysis">购前分析</button>
+            <button class="tab" data-tab="compare">多号码比对</button>
+            <button class="tab" data-tab="streak">连续走势</button>
+            <button class="tab" data-tab="monthly">月度统计</button>
+            <button class="tab" data-tab="reference">号码参考</button>
+          </div>
+
+          <div id="dashboardPanel">
+            <div class="grid two">
+              <div>
+                <h3>特码号码热度</h3>
+                <div id="numberHeat"></div>
+              </div>
+              <div>
+                <h3>久未出现号码</h3>
+                <div id="coldNumbers"></div>
+              </div>
+              <div>
+                <h3>生肖分布</h3>
+                <div id="sxChart"></div>
+              </div>
+              <div>
+                <h3>颜色 / 单双 / 大小</h3>
+                <div id="basicChart"></div>
+              </div>
+              <div>
+                <h3>波色未出</h3>
+                <div id="colorMiss"></div>
+              </div>
+              <div>
+                <h3>生肖未出</h3>
+                <div id="sxMiss"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="recordsPanel" class="hidden">
+            <div class="record-actions">
+              <input id="recordSearch" placeholder="搜索期号、日期、号码、生肖" style="max-width: 280px;">
+              <button id="exportBtn">导出 CSV</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>期号</th>
+                    <th>开奖时间</th>
+                    <th>特码</th>
+                    <th>单双</th>
+                    <th>大小</th>
+                    <th>间隔</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="recordRows"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="analysisPanel" class="hidden">
+            <h2>购前号码分析</h2>
+            <div class="form-row">
+              <div>
+                <label for="buyNumbers">准备分析的号码或生肖</label>
+                <textarea id="buyNumbers" placeholder="例如：07, 14, 45 或 鼠龙虎马"></textarea>
+              </div>
+              <div>
+                <label for="recentRange">近期范围</label>
+                <select id="recentRange">
+                  <option value="10">最近 10 期</option>
+                  <option value="30" selected>最近 30 期</option>
+                  <option value="50">最近 50 期</option>
+                </select>
+                <div class="footer-note">支持号码和生肖混合输入。生肖会按 2026 版号码表自动拆解。</div>
+              </div>
+            </div>
+            <button id="analyzeBtn" class="primary">开始分析</button>
+            <div id="analysisResult" class="analysis-grid" style="margin-top: 16px;"></div>
+          </div>
+
+          <div id="comparePanel" class="hidden">
+            <h2>多号码比对</h2>
+            <div class="form-row">
+              <div>
+                <label for="compareNumbers">要比对的号码或生肖</label>
+                <textarea id="compareNumbers" placeholder="例如：07, 14, 45 或 鼠龙虎马"></textarea>
+              </div>
+              <div>
+                <label for="compareRange">近期范围</label>
+                <select id="compareRange">
+                  <option value="10">最近 10 期</option>
+                  <option value="30" selected>最近 30 期</option>
+                  <option value="50">最近 50 期</option>
+                </select>
+                <div class="footer-note">生肖会拆成对应号码后进入同一张对比表。</div>
+              </div>
+            </div>
+            <button id="compareBtn" class="primary">开始比对</button>
+            <div id="duplicateSummary" class="notice" style="margin-top: 16px;"></div>
+            <div class="table-wrap" style="margin-top: 16px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>号码</th>
+                    <th>生肖</th>
+                    <th>波色</th>
+                    <th>次数</th>
+                    <th>最近出现</th>
+                    <th>间隔</th>
+                    <th>近期次数</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody id="compareRows"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="streakPanel" class="hidden">
+            <h2>连续走势分析</h2>
+            <div class="grid two">
+              <div>
+                <h3>当前连续走势</h3>
+                <div id="currentStreak"></div>
+              </div>
+              <div>
+                <h3>历史最长连续走势</h3>
+                <div id="maxStreak"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="monthlyPanel" class="hidden">
+            <h2>月度统计</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>月份</th>
+                    <th>期数</th>
+                    <th>高频号码</th>
+                    <th>高频生肖</th>
+                    <th>波色分布</th>
+                    <th>单双</th>
+                    <th>大小</th>
+                  </tr>
+                </thead>
+                <tbody id="monthlyRows"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="referencePanel" class="hidden">
+            <h2>号码参考</h2>
+            <div class="notice">下表为 2026 年版本生肖号码分布。不同年份生肖对应号码会变化，2025 年仅作历史参考。</div>
+            <div class="table-wrap">
+              <table class="reference-table">
+                <thead>
+                  <tr>
+                    <th>生肖</th>
+                    <th>对应号码与波色</th>
+                  </tr>
+                </thead>
+                <tbody id="referenceRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="addModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+      <div class="modal-header">
+        <h2 id="addModalTitle">新增一期</h2>
+        <button id="closeAddModalBtn" class="icon-button" type="button" aria-label="关闭">×</button>
+      </div>
+      <div class="modal-body">
+          <form id="addForm">
+            <div class="form-row">
+              <div>
+                <label for="period">期号</label>
+                <input id="period" placeholder="128期" required>
+              </div>
+              <div>
+                <label for="drawDate">开奖日期</label>
+                <input id="drawDate" type="date" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div>
+                <label for="num">特码号码</label>
+                <input id="num" inputmode="numeric" maxlength="2" placeholder="01-49" required>
+              </div>
+              <div>
+                <label for="sx">生肖</label>
+                <select id="sx" required>
+                  <option value="">请选择</option>
+                  <option>鼠</option><option>牛</option><option>虎</option><option>兔</option>
+                  <option>龙</option><option>蛇</option><option>马</option><option>羊</option>
+                  <option>猴</option><option>鸡</option><option>狗</option><option>猪</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div>
+                <label for="color">颜色</label>
+                <select id="color" required>
+                  <option value="">请选择</option>
+                  <option>红</option>
+                  <option>蓝</option>
+                  <option>绿</option>
+                </select>
+              </div>
+              <div>
+                <label>&nbsp;</label>
+                <button class="primary" style="width:100%;">保存记录</button>
+              </div>
+            </div>
+            <div id="formMsg" class="muted"></div>
+          </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const seedCsv = `期号,开奖时间,平一,平二,平三,平四,平五,平六,特码
+127期,2026-05-07,14蛇(蓝),08猪(红),27龙(绿),03龙(蓝),07鼠(红),29虎(红),45狗(红)
+126期,2026-05-06,15龙(蓝),09狗(蓝),05虎(绿),03龙(蓝),01马(红),10鸡(蓝),49马(绿)
+125期,2026-05-05,16兔(绿),19鼠(红),07鼠(红),30牛(红),38蛇(绿),39龙(绿),31鼠(蓝)
+124期,2026-05-04,46鸡(红),05虎(绿),10鸡(蓝),17虎(绿),12羊(红),22鸡(绿),39龙(绿)
+123期,2026-05-03,39龙(绿),23猴(红),49马(绿),17虎(绿),42牛(蓝),44猪(绿),46鸡(红)
+122期,2026-05-02,18牛(红),23猴(红),15龙(蓝),22鸡(绿),25马(蓝),45狗(红),01马(红)
+121期,2026-05-01,45狗(红),21狗(绿),35猴(红),48羊(蓝),06牛(绿),20猪(蓝),44猪(绿)
+120期,2026-04-30,18牛(红),24羊(红),07鼠(红),23猴(红),48羊(蓝),20猪(蓝),06牛(绿)
+119期,2026-04-29,38蛇(绿),18牛(红),32猪(绿),22鸡(绿),30牛(红),40兔(红),11猴(绿)
+118期,2026-04-28,38蛇(绿),37马(蓝),22鸡(绿),46鸡(红),49马(绿),40兔(红),08猪(红)
+117期,2026-04-27,45狗(红),02蛇(红),46鸡(红),33狗(绿),19鼠(红),07鼠(红),16兔(绿)
+116期,2026-04-26,15龙(蓝),46鸡(红),16兔(绿),10鸡(蓝),48羊(蓝),33狗(绿),22鸡(绿)
+115期,2026-04-25,21狗(绿),16兔(绿),25马(蓝),29虎(红),08猪(红),07鼠(红),04兔(蓝)
+114期,2026-04-24,45狗(红),41虎(蓝),10鸡(蓝),01马(红),36羊(蓝),25马(蓝),30牛(红)
+113期,2026-04-23,42牛(蓝),22鸡(绿),15龙(蓝),17虎(绿),32猪(绿),49马(绿),02蛇(红)
+112期,2026-04-22,15龙(蓝),19鼠(红),30牛(红),07鼠(红),44猪(绿),10鸡(蓝),09狗(蓝)
+111期,2026-04-21,24羊(红),23猴(红),21狗(绿),41虎(蓝),38蛇(绿),33狗(绿),01马(红)
+110期,2026-04-20,40兔(红),03龙(蓝),43鼠(绿),29虎(红),45狗(红),19鼠(红),30牛(红)
+109期,2026-04-19,38蛇(绿),07鼠(红),19鼠(红),24羊(红),43鼠(绿),08猪(红),16兔(绿)
+108期,2026-04-18,06牛(绿),30牛(红),26蛇(蓝),14蛇(蓝),48羊(蓝),40兔(红),45狗(红)
+107期,2026-04-17,35猴(红),10鸡(蓝),41虎(蓝),43鼠(绿),34鸡(红),06牛(绿),49马(绿)
+106期,2026-04-16,31鼠(蓝),48羊(蓝),05虎(绿),11猴(绿),46鸡(红),40兔(红),22鸡(绿)
+105期,2026-04-15,32猪(绿),44猪(绿),17虎(绿),19鼠(红),11猴(绿),36羊(蓝),28兔(绿)
+104期,2026-04-14,20猪(蓝),45狗(红),39龙(绿),49马(绿),03龙(蓝),48羊(蓝),01马(红)
+103期,2026-04-13,34鸡(红),03龙(蓝),01马(红),30牛(红),39龙(绿),04兔(蓝),06牛(绿)
+102期,2026-04-12,47猴(蓝),03龙(蓝),32猪(绿),46鸡(红),39龙(绿),36羊(蓝),20猪(蓝)
+101期,2026-04-11,22鸡(绿),08猪(红),02蛇(红),34鸡(红),20猪(蓝),12羊(红),39龙(绿)
+100期,2026-04-10,24羊(红),45狗(红),04兔(蓝),32猪(绿),03龙(蓝),48羊(蓝),33狗(绿)
+099期,2026-04-09,10鸡(蓝),32猪(绿),22鸡(绿),18牛(红),28兔(绿),17虎(绿),12羊(红)
+098期,2026-04-08,24羊(红),08猪(红),03龙(蓝),14蛇(蓝),32猪(绿),49马(绿),17虎(绿)
+097期,2026-04-07,28兔(绿),08猪(红),44猪(绿),26蛇(蓝),29虎(红),46鸡(红),11猴(绿)
+096期,2026-04-06,35猴(红),37马(蓝),26蛇(蓝),05虎(绿),25马(蓝),15龙(蓝),43鼠(绿)
+095期,2026-04-05,15龙(蓝),39龙(绿),01马(红),38蛇(绿),21狗(绿),48羊(蓝),35猴(红)
+094期,2026-04-04,16兔(绿),25马(蓝),04兔(蓝),28兔(绿),43鼠(绿),38蛇(绿),17虎(绿)
+093期,2026-04-03,13马(红),18牛(红),26蛇(蓝),47猴(蓝),48羊(蓝),04兔(蓝),40兔(红)
+092期,2026-04-02,46鸡(红),42牛(蓝),25马(蓝),47猴(蓝),38蛇(绿),19鼠(红),06牛(绿)
+091期,2026-04-01,08猪(红),17虎(绿),32猪(绿),05虎(绿),42牛(蓝),24羊(红),37马(蓝)
+090期,2026-03-31,48羊(蓝),29虎(红),20猪(蓝),17虎(绿),37马(蓝),08猪(红),36羊(蓝)
+089期,2026-03-30,26蛇(蓝),44猪(绿),34鸡(红),05虎(绿),21狗(绿),22鸡(绿),49马(绿)
+088期,2026-03-29,16兔(绿),46鸡(红),18牛(红),10鸡(蓝),12羊(红),42牛(蓝),27龙(绿)
+087期,2026-03-28,17虎(绿),01马(红),21狗(绿),29虎(红),47猴(蓝),02蛇(红),26蛇(蓝)
+086期,2026-03-27,15龙(蓝),36羊(蓝),14蛇(蓝),24羊(红),26蛇(蓝),34鸡(红),12羊(红)
+085期,2026-03-26,14蛇(蓝),13马(红),27龙(绿),33狗(绿),06牛(绿),20猪(蓝),19鼠(红)
+084期,2026-03-25,07鼠(红),24羊(红),02蛇(红),05虎(绿),20猪(蓝),31鼠(蓝),16兔(绿)
+083期,2026-03-24,46鸡(红),08猪(红),23猴(红),36羊(蓝),30牛(红),01马(红),05虎(绿)
+082期,2026-03-23,03龙(蓝),21狗(绿),33狗(绿),37马(蓝),41虎(蓝),25马(蓝),27龙(绿)
+081期,2026-03-22,04兔(蓝),36羊(蓝),14蛇(蓝),15龙(蓝),35猴(红),41虎(蓝),17虎(绿)
+080期,2026-03-21,21狗(绿),18牛(红),17虎(绿),48羊(蓝),09狗(蓝),42牛(蓝),03龙(蓝)
+079期,2026-03-20,49马(绿),34鸡(红),06牛(绿),20猪(蓝),04兔(蓝),43鼠(绿),35猴(红)
+078期,2026-03-19,18牛(红),17虎(绿),10鸡(蓝),33狗(绿),02蛇(红),08猪(红),46鸡(红)
+077期,2026-03-18,37马(蓝),32猪(绿),46鸡(红),25马(蓝),39龙(绿),30牛(红),29虎(红)
+076期,2026-03-17,12羊(红),07鼠(红),24羊(红),22鸡(绿),03龙(蓝),41虎(蓝),02蛇(红)
+075期,2026-03-16,19鼠(红),22鸡(绿),26蛇(蓝),20猪(蓝),41虎(蓝),27龙(绿),33狗(绿)
+074期,2026-03-15,12羊(红),31鼠(蓝),49马(绿),25马(蓝),24羊(红),32猪(绿),10鸡(蓝)
+073期,2026-03-14,07鼠(红),29虎(红),01马(红),33狗(绿),36羊(蓝),14蛇(蓝),34鸡(红)
+072期,2026-03-13,12羊(红),28兔(绿),01马(红),42牛(蓝),25马(蓝),44猪(绿),46鸡(红)
+071期,2026-03-12,44猪(绿),30牛(红),25马(蓝),05虎(绿),41虎(蓝),08猪(红),48羊(蓝)
+070期,2026-03-11,47猴(蓝),17虎(绿),23猴(红),10鸡(蓝),41虎(蓝),07鼠(红),25马(蓝)
+069期,2026-03-10,23猴(红),16兔(绿),10鸡(蓝),34鸡(红),08猪(红),36羊(蓝),24羊(红)
+068期,2026-03-09,49马(绿),02蛇(红),01马(红),26蛇(蓝),38蛇(绿),21狗(绿),23猴(红)
+067期,2026-03-08,15龙(蓝),30牛(红),06牛(绿),01马(红),26蛇(蓝),09狗(蓝),05虎(绿)
+066期,2026-03-07,24羊(红),20猪(蓝),36羊(蓝),44猪(绿),02蛇(红),28兔(绿),37马(蓝)
+065期,2026-03-06,02蛇(红),45狗(红),17虎(绿),38蛇(绿),33狗(绿),24羊(红),05虎(绿)
+064期,2026-03-05,08猪(红),23猴(红),40兔(红),44猪(绿),34鸡(红),02蛇(红),18牛(红)
+063期,2026-03-04,36羊(蓝),26蛇(蓝),37马(蓝),02蛇(红),44猪(绿),31鼠(蓝),28兔(绿)
+062期,2026-03-03,46鸡(红),29虎(红),06牛(绿),49马(绿),35猴(红),42牛(蓝),24羊(红)
+061期,2026-03-02,46鸡(红),17虎(绿),08猪(红),25马(蓝),02蛇(红),37马(蓝),29虎(红)
+060期,2026-03-01,05虎(绿),27龙(绿),40兔(红),34鸡(红),39龙(绿),01马(红),09狗(蓝)
+059期,2026-02-28,29虎(红),19鼠(红),24羊(红),43鼠(绿),28兔(绿),12羊(红),10鸡(蓝)
+058期,2026-02-27,20猪(蓝),38蛇(绿),13马(红),21狗(绿),33狗(绿),40兔(红),31鼠(蓝)
+057期,2026-02-26,21狗(绿),29虎(红),40兔(红),30牛(红),26蛇(蓝),34鸡(红),23猴(红)
+056期,2026-02-25,45狗(红),09狗(蓝),06牛(绿),07鼠(红),10鸡(蓝),26蛇(蓝),48羊(蓝)
+055期,2026-02-24,31鼠(蓝),28兔(绿),20猪(蓝),21狗(绿),39龙(绿),09狗(蓝),14蛇(蓝)
+054期,2026-02-23,37马(蓝),30牛(红),11猴(绿),19鼠(红),49马(绿),32猪(绿),48羊(蓝)
+053期,2026-02-22,16兔(绿),12羊(红),33狗(绿),17虎(绿),41虎(蓝),18牛(红),15龙(蓝)
+052期,2026-02-21,15龙(蓝),46鸡(红),14蛇(蓝),13马(红),40兔(红),35猴(红),38蛇(绿)
+051期,2026-02-20,40兔(红),42牛(蓝),44猪(绿),06牛(绿),14蛇(蓝),38蛇(绿),01马(红)
+050期,2026-02-19,10鸡(蓝),13马(红),30牛(红),37马(蓝),33狗(绿),44猪(绿),23猴(红)
+049期,2026-02-18,28兔(绿),42牛(蓝),22鸡(绿),49马(绿),12羊(红),31鼠(蓝),13马(红)
+048期,2026-02-17,08猪(红),38蛇(绿),29虎(红),32猪(绿),46鸡(红),16兔(绿),24羊(红)
+047期,2026-02-16,40虎(红),35羊(红),23羊(红),42鼠(蓝),46猴(红),47羊(蓝),39兔(绿)
+046期,2026-02-15,13蛇(红),09鸡(蓝),20狗(蓝),22猴(绿),39兔(绿),36马(蓝),03兔(蓝)
+045期,2026-02-14,20狗(蓝),38龙(绿),22猴(绿),13蛇(红),42鼠(蓝),27兔(绿),01蛇(红)
+044期,2026-02-13,46猴(红),17牛(绿),39兔(绿),47羊(蓝),48马(蓝),38龙(绿),19猪(红)
+043期,2026-02-12,09鸡(蓝),35羊(红),42鼠(蓝),40虎(红),33鸡(绿),03兔(蓝),13蛇(红)
+042期,2026-02-11,38龙(绿),22猴(绿),17牛(绿),19猪(红),01蛇(红),18鼠(红),16虎(绿)
+041期,2026-02-10,02龙(红),08狗(红),17牛(绿),44狗(绿),32狗(绿),27兔(绿),36马(蓝)
+040期,2026-02-09,46猴(红),06鼠(绿),29牛(红),27兔(绿),11羊(绿),49蛇(绿),28虎(绿)
+039期,2026-02-08,31猪(蓝),20狗(蓝),08狗(红),29牛(红),10猴(蓝),04虎(蓝),11羊(绿)
+038期,2026-02-07,06鼠(绿),40虎(红),49蛇(绿),34猴(红),12马(红),20狗(蓝),42鼠(蓝)
+037期,2026-02-06,34猴(红),42鼠(蓝),39兔(绿),13蛇(红),44狗(绿),45鸡(红),43猪(绿)
+036期,2026-02-05,44狗(绿),39兔(绿),11羊(绿),20狗(蓝),27兔(绿),48马(蓝),01蛇(红)
+035期,2026-02-04,32狗(绿),47羊(蓝),44狗(绿),36马(蓝),19猪(红),41牛(蓝),27兔(绿)
+034期,2026-02-03,38龙(绿),45鸡(红),35羊(红),24马(红),30鼠(红),23羊(红),19猪(红)
+033期,2026-02-02,14龙(蓝),22猴(绿),46猴(红),33鸡(绿),08狗(红),11羊(绿),41牛(蓝)
+032期,2026-02-01,23羊(红),17牛(绿),11羊(绿),20狗(蓝),10猴(蓝),39兔(绿),06鼠(绿)
+031期,2026-01-31,38龙(绿),25蛇(蓝),07猪(红),19猪(红),11羊(绿),05牛(绿),26龙(蓝)
+030期,2026-01-30,03兔(蓝),06鼠(绿),47羊(蓝),01蛇(红),35羊(红),04虎(蓝),41牛(蓝)
+029期,2026-01-29,47羊(蓝),08狗(红),05牛(绿),04虎(蓝),03兔(蓝),18鼠(红),01蛇(红)
+028期,2026-01-28,17牛(绿),47羊(蓝),28虎(绿),39兔(绿),32狗(绿),49蛇(绿),03兔(蓝)
+027期,2026-01-27,11羊(绿),16虎(绿),46猴(红),10猴(蓝),18鼠(红),49蛇(绿),45鸡(红)
+026期,2026-01-26,44狗(绿),34猴(红),24马(红),13蛇(红),37蛇(蓝),42鼠(蓝),19猪(红)
+025期,2026-01-25,46猴(红),10猴(蓝),41牛(蓝),06鼠(绿),09鸡(蓝),14龙(蓝),37蛇(蓝)
+024期,2026-01-24,10猴(蓝),45鸡(红),25蛇(蓝),15兔(蓝),23羊(红),44狗(绿),28虎(绿)
+023期,2026-01-23,06鼠(绿),29牛(红),36马(蓝),38龙(绿),18鼠(红),31猪(蓝),47羊(蓝)
+022期,2026-01-22,39兔(绿),08狗(红),20狗(蓝),37蛇(蓝),46猴(红),30鼠(红),18鼠(红)
+021期,2026-01-21,47羊(蓝),45鸡(红),33鸡(绿),07猪(红),24马(红),10猴(蓝),42鼠(蓝)
+020期,2026-01-20,09鸡(蓝),37蛇(蓝),14龙(蓝),47羊(蓝),11羊(绿),24马(红),12马(红)
+019期,2026-01-19,42鼠(蓝),22猴(绿),45鸡(红),19猪(红),07猪(红),25蛇(蓝),46猴(红)
+018期,2026-01-18,40虎(红),42鼠(蓝),43猪(绿),31猪(蓝),25蛇(蓝),15兔(蓝),39兔(绿)
+017期,2026-01-17,44狗(绿),18鼠(红),31猪(蓝),41牛(蓝),33鸡(绿),02龙(红),32狗(绿)
+016期,2026-01-16,34猴(红),12马(红),48马(蓝),26龙(蓝),40虎(红),38龙(绿),06鼠(绿)
+015期,2026-01-15,10猴(蓝),08狗(红),30鼠(红),20狗(蓝),15兔(蓝),33鸡(绿),31猪(蓝)
+014期,2026-01-14,38龙(绿),13蛇(红),12马(红),08狗(红),43猪(绿),31猪(蓝),26龙(蓝)
+013期,2026-01-13,09鸡(蓝),19猪(红),44狗(绿),27兔(绿),37蛇(蓝),06鼠(绿),01蛇(红)
+012期,2026-01-12,25蛇(蓝),26龙(蓝),33鸡(绿),20狗(蓝),41牛(蓝),45鸡(红),11羊(绿)
+011期,2026-01-11,32狗(绿),10猴(蓝),07猪(红),05牛(绿),48马(蓝),15兔(蓝),11羊(绿)
+010期,2026-01-10,23羊(红),38龙(绿),24马(红),49蛇(绿),11羊(绿),30鼠(红),27兔(绿)
+009期,2026-01-09,17牛(绿),18鼠(红),06鼠(绿),49蛇(绿),07猪(红),22猴(绿),28虎(绿)
+008期,2026-01-08,05牛(绿),39兔(绿),36马(蓝),19猪(红),29牛(红),45鸡(红),21鸡(绿)
+007期,2026-01-07,28虎(绿),40虎(红),45鸡(红),34猴(红),44狗(绿),15兔(蓝),41牛(蓝)
+006期,2026-01-06,35羊(红),41牛(蓝),15兔(蓝),06鼠(绿),46猴(红),21鸡(绿),13蛇(红)
+005期,2026-01-05,46猴(红),19猪(红),20狗(蓝),36马(蓝),13蛇(红),17牛(绿),43猪(绿)
+004期,2026-01-04,22猴(绿),19猪(红),07猪(红),35羊(红),49蛇(绿),36马(蓝),45鸡(红)
+003期,2026-01-03,30鼠(红),44狗(绿),07猪(红),15兔(蓝),42鼠(蓝),17牛(绿),09鸡(蓝)
+002期,2026-01-02,48马(蓝),07猪(红),04虎(蓝),03兔(蓝),15兔(蓝),11羊(绿),22猴(绿)
+001期,2026-01-01,27兔(绿),08狗(红),43猪(绿),33鸡(绿),42鼠(蓝),11羊(绿),29牛(红)`;
+
+    const storeKey = "tema-dashboard-records-2026-v1";
+    const sxOrder = ["马", "蛇", "龙", "兔", "虎", "牛", "鼠", "猪", "狗", "鸡", "猴", "羊"];
+    const colorOrder = ["红", "蓝", "绿"];
+    const zodiacMap2026 = {
+      "马": [1, 13, 25, 37, 49],
+      "蛇": [2, 14, 26, 38],
+      "龙": [3, 15, 27, 39],
+      "兔": [4, 16, 28, 40],
+      "虎": [5, 17, 29, 41],
+      "牛": [6, 18, 30, 42],
+      "鼠": [7, 19, 31, 43],
+      "猪": [8, 20, 32, 44],
+      "狗": [9, 21, 33, 45],
+      "鸡": [10, 22, 34, 46],
+      "猴": [11, 23, 35, 47],
+      "羊": [12, 24, 36, 48]
+    };
+    const waveColor2026 = {
+      "红": [1, 2, 7, 8, 12, 13, 18, 19, 23, 24, 29, 30, 34, 35, 40, 45, 46],
+      "蓝": [3, 4, 9, 10, 14, 15, 20, 25, 26, 31, 36, 37, 41, 42, 47, 48],
+      "绿": [5, 6, 11, 16, 17, 21, 22, 27, 28, 32, 33, 38, 39, 43, 44, 49]
+    };
+    const numberReference2026 = buildNumberReference();
+    let records = loadRecords();
+
+    function parseBall(text) {
+      const match = String(text).trim().match(/^(\d{1,2})(.)(?:\((红|蓝|绿)\))$/);
+      if (!match) throw new Error("特码格式错误：" + text);
+      const num = Number(match[1]);
+      if (num < 1 || num > 49) throw new Error("号码必须在 01-49 之间");
+      return { raw: pad(num) + match[2] + "(" + match[3] + ")", num, sx: match[2], color: match[3] };
+    }
+
+    function parseCsv(csv) {
+      const lines = csv.trim().split(/\r?\n/).filter(Boolean);
+      const header = lines.shift().split(",");
+      if (header[0] !== "期号" || header[1] !== "开奖时间" || header[8] !== "特码") {
+        throw new Error("CSV 表头不符合要求");
+      }
+      return lines.map(line => {
+        const cells = line.split(",");
+        if (cells.length < 9) throw new Error("CSV 行字段不足：" + line);
+        return {
+          period: normalizePeriod(cells[0]),
+          date: cells[1],
+          special: parseBall(cells[8])
+        };
+      });
+    }
+
+    function loadRecords() {
+      const saved = localStorage.getItem(storeKey);
+      const data = saved ? JSON.parse(saved) : parseCsv(seedCsv);
+      return sortRecords(data);
+    }
+
+    function saveRecords() {
+      localStorage.setItem(storeKey, JSON.stringify(records));
+    }
+
+    function normalizePeriod(value) {
+      const match = String(value).trim().match(/^0*(\d+)期?$/);
+      if (!match) throw new Error("期号格式错误");
+      return pad(Number(match[1]), 3) + "期";
+    }
+
+    function pad(num, size = 2) {
+      return String(num).padStart(size, "0");
+    }
+
+    function sortRecords(list) {
+      return [...list].sort((a, b) => b.date.localeCompare(a.date) || periodNo(b.period) - periodNo(a.period));
+    }
+
+    function periodNo(period) {
+      return Number(String(period).replace(/\D/g, ""));
+    }
+
+    function countBy(list, getter) {
+      const map = new Map();
+      list.forEach(item => {
+        const key = getter(item);
+        map.set(key, (map.get(key) || 0) + 1);
+      });
+      return [...map.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]), "zh-CN"));
+    }
+
+    function buildNumberReference() {
+      const map = {};
+      Object.entries(zodiacMap2026).forEach(([sx, nums]) => {
+        nums.forEach(num => {
+          const color = Object.entries(waveColor2026).find(([, values]) => values.includes(num))[0];
+          map[num] = { sx, color };
+        });
+      });
+      return map;
+    }
+
+    function getMissRows(values, list, getter) {
+      return values.map(value => {
+        const index = list.findIndex(item => getter(item) === value);
+        return [value, index === -1 ? list.length : index];
+      }).sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]), "zh-CN"));
+    }
+
+    function recordKey(record) {
+      return record.date + "|" + record.period;
+    }
+
+    function getSelectedYear() {
+      return "2026";
+    }
+
+    function getScopedRecords() {
+      return records.filter(r => r.date.startsWith("2026-"));
+    }
+
+    function getStats() {
+      const scopedRecords = getScopedRecords();
+      const total = scopedRecords.length;
+      const latest = scopedRecords[0];
+      const byNum = countBy(scopedRecords, r => pad(r.special.num));
+      const bySx = countBy(scopedRecords, r => r.special.sx);
+      const byColor = countBy(scopedRecords, r => r.special.color);
+      const odd = scopedRecords.filter(r => r.special.num % 2 === 1).length;
+      const big = scopedRecords.filter(r => r.special.num >= 25).length;
+      const colorMiss = getMissRows(colorOrder, scopedRecords, r => r.special.color);
+      const sxMiss = getMissRows(sxOrder, scopedRecords, r => r.special.sx);
+      const cold = [];
+      for (let i = 1; i <= 49; i++) {
+        const num = pad(i);
+        const index = scopedRecords.findIndex(r => pad(r.special.num) === num);
+        cold.push([num, index === -1 ? total : index]);
+      }
+      cold.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+      return { total, latest, byNum, bySx, byColor, odd, even: total - odd, big, small: total - big, cold, colorMiss, sxMiss };
+    }
+
+    function render() {
+      const scopedRecords = getScopedRecords();
+      const stats = getStats();
+      document.getElementById("dataStatus").textContent = getSelectedYear() + " 年 " + scopedRecords.length + " 条 / 总 " + records.length + " 条";
+      renderMetrics(stats);
+      renderBars("numberHeat", stats.byNum.slice(0, 12));
+      renderBars("coldNumbers", stats.cold.slice(0, 12), "期未出");
+      renderBars("sxChart", stats.bySx);
+      renderBasic(stats);
+      renderColorMiss(stats.colorMiss);
+      renderBars("sxMiss", stats.sxMiss, "期未出");
+      renderRecords();
+      renderReference();
+      renderStreaks();
+      renderMonthly();
+    }
+
+    function renderMetrics(stats) {
+      const latestText = stats.latest ? stats.latest.period + " " + stats.latest.special.raw : "-";
+      const topNum = stats.byNum[0] ? stats.byNum[0][0] + " / " + stats.byNum[0][1] + "次" : "-";
+      const coldNum = stats.cold[0] ? stats.cold[0][0] + " / " + stats.cold[0][1] + "期未出" : "-";
+      const topSx = stats.bySx[0] ? stats.bySx[0][0] + " / " + stats.bySx[0][1] + "次" : "-";
+      document.getElementById("metrics").innerHTML = [
+        metric("当前年份期数", stats.total, getSelectedYear() + " 年数据"),
+        metric("最新期", latestText, stats.latest ? stats.latest.date : "-"),
+        metric("高频号码", topNum, "出现次数最多"),
+        metric("久未出现", coldNum, "按最新期倒推"),
+        metric("高频生肖", topSx, "特码生肖"),
+        metric("波色分布", colorTagList(stats.byColor), "红蓝绿"),
+        metric("单双", "单" + stats.odd + " / 双" + stats.even, "特码单双"),
+        metric("大小", "大" + stats.big + " / 小" + stats.small, "25-49 为大")
+      ].join("");
+    }
+
+    function metric(label, value, sub) {
+      return `<div class="card metric"><div class="label">${label}</div><div class="value">${value}</div><div class="sub">${sub}</div></div>`;
+    }
+
+    function renderBars(id, rows, suffix = "次") {
+      const max = Math.max(...rows.map(x => x[1]), 1);
+      document.getElementById(id).innerHTML = rows.map(([name, count]) => `
+        <div class="bar-row">
+          <span>${name}</span>
+          <div class="bar-bg"><div class="bar" style="width:${count / max * 100}%"></div></div>
+          <span>${count}${suffix}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderColorBars(id, rows, suffix = "次") {
+      const max = Math.max(...rows.map(x => x[1]), 1);
+      document.getElementById(id).innerHTML = rows.map(([name, count]) => `
+        <div class="bar-row">
+          <span>${colorTag(name, name + "波")}</span>
+          <div class="bar-bg"><div class="bar ${colorClass(name)}" style="width:${count / max * 100}%"></div></div>
+          <span>${count}${suffix}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderBasic(stats) {
+      const colorRows = stats.byColor.map(([name, count]) => ({ name, count, cls: colorClass(name) }));
+      const rows = [
+        ...colorRows,
+        { name: "单", count: stats.odd, cls: "" },
+        { name: "双", count: stats.even, cls: "" },
+        { name: "大", count: stats.big, cls: "" },
+        { name: "小", count: stats.small, cls: "" }
+      ];
+      const max = Math.max(...rows.map(x => x.count), 1);
+      document.getElementById("basicChart").innerHTML = rows.map(row => `
+        <div class="bar-row">
+          <span>${colorOrder.includes(row.name) ? colorTag(row.name, row.name + "波") : row.name}</span>
+          <div class="bar-bg"><div class="bar ${row.cls}" style="width:${row.count / max * 100}%"></div></div>
+          <span>${row.count}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderColorMiss(rows) {
+      const max = Math.max(...rows.map(x => x[1]), 1);
+      document.getElementById("colorMiss").innerHTML = rows.map(([name, count]) => `
+        <div class="bar-row">
+          <span>${colorTag(name, name + "波")}</span>
+          <div class="bar-bg"><div class="bar ${colorClass(name)}" style="width:${count / max * 100}%"></div></div>
+          <span>${count}期未出</span>
+        </div>
+      `).join("");
+    }
+
+    function renderRecords() {
+      const scopedRecords = getScopedRecords();
+      const keyword = document.getElementById("recordSearch").value.trim();
+      const rows = keyword ? scopedRecords.filter(r => [r.period, r.date, r.special.raw].join(" ").includes(keyword)) : scopedRecords;
+      document.getElementById("recordRows").innerHTML = rows.map((r, index) => {
+        const gap = scopedRecords.findIndex(item => recordKey(item) === recordKey(r));
+        return `<tr>
+          <td>${r.period}</td>
+          <td>${r.date}</td>
+          <td>${colorTag(r.special.color, r.special.raw)}</td>
+          <td>${r.special.num % 2 ? "单" : "双"}</td>
+          <td>${r.special.num >= 25 ? "大" : "小"}</td>
+          <td>${gap}</td>
+          <td><button data-delete="${recordKey(r)}" class="danger">删除</button></td>
+        </tr>`;
+      }).join("");
+    }
+
+    function colorClass(color) {
+      return color === "红" ? "red" : color === "蓝" ? "blue" : "green";
+    }
+
+    function colorTag(color, label = color) {
+      return `<span class="tag ${colorClass(color)}">${label}</span>`;
+    }
+
+    function colorTagList(items) {
+      return `<span class="inline-tags">${items.map(item => colorTag(item[0], item[0] + item[1])).join("")}</span>`;
+    }
+
+    function statusForNumber(count, lastIndex, total) {
+      const avg = total / 49;
+      if (count === 0) return "历史未出";
+      if (lastIndex === 0) return "刚刚出现";
+      if (count >= avg * 1.6) return "历史高频";
+      if (lastIndex >= Math.max(30, total * 0.25)) return "久未出现";
+      return "正常波动";
+    }
+
+    function parseAnalysisInput(text) {
+      const numbers = [...text.matchAll(/\d{1,2}/g)].map(match => Number(match[0]));
+      const zodiacs = [];
+      for (const char of text) {
+        if (sxOrder.includes(char)) zodiacs.push(char);
+      }
+      return {
+        numbers,
+        zodiacs: [...new Set(zodiacs)]
+      };
+    }
+
+    function analyzeNumbers() {
+      const range = Number(document.getElementById("recentRange").value);
+      const input = document.getElementById("buyNumbers").value;
+      const parsed = parseAnalysisInput(input);
+      const expandedNums = parsed.zodiacs.flatMap(sx => zodiacMap2026[sx] || []);
+      const unique = [...new Set([...parsed.numbers, ...expandedNums])];
+      const invalid = unique.filter(n => !Number.isInteger(n) || n < 1 || n > 49);
+      if (invalid.length) throw new Error("号码必须在 01-49 之间");
+      if (!unique.length && !parsed.zodiacs.length) throw new Error("请输入 01-49 的号码，或输入鼠、牛、虎等生肖");
+      const zodiacCards = parsed.zodiacs.map(sx => zodiacAnalysisCard(sx, range));
+      const numberCards = unique.map(num => analysisCard(num, range));
+      document.getElementById("analysisResult").innerHTML = [...zodiacCards, ...numberCards].join("");
+    }
+
+    function analysisCard(num, range) {
+      const scopedRecords = getScopedRecords();
+      const code = pad(num);
+      const matched = scopedRecords.filter(r => r.special.num === num);
+      const recentMatched = scopedRecords.slice(0, range).filter(r => r.special.num === num);
+      const lastIndex = scopedRecords.findIndex(r => r.special.num === num);
+      const last = matched[0];
+      const sxText = countBy(matched, r => r.special.sx).map(x => x[0] + x[1]).join(" / ") || "无历史记录";
+      const colorRows = countBy(matched, r => r.special.color);
+      const colorText = colorRows.length ? colorTagList(colorRows) : "无历史记录";
+      const ref = numberReference2026[num];
+      const status = statusForNumber(matched.length, lastIndex, scopedRecords.length);
+      return `<div class="analysis-card">
+        <div class="toolbar" style="justify-content:space-between;">
+          <strong>${code}</strong>
+          <span class="tag">${status}</span>
+        </div>
+        <div class="kv">
+          <span>${getSelectedYear()}年次数</span><span>${matched.length} 次</span>
+          <span>最近出现</span><span>${last ? last.period + " / " + last.date : "从未出现"}</span>
+          <span>间隔期数</span><span>${lastIndex === -1 ? scopedRecords.length : lastIndex} 期</span>
+          <span>近期出现</span><span>最近 ${range} 期 ${recentMatched.length} 次</span>
+          <span>参考生肖</span><span>${ref ? ref.sx : "-"}</span>
+          <span>参考波色</span><span>${ref ? colorTag(ref.color, ref.color + "波") : "-"}</span>
+          <span>生肖记录</span><span>${sxText}</span>
+          <span>颜色记录</span><span>${colorText}</span>
+          <span>单双大小</span><span>${num % 2 ? "单" : "双"} / ${num >= 25 ? "大" : "小"}</span>
+        </div>
+      </div>`;
+    }
+
+    function zodiacAnalysisCard(sx, range) {
+      const scopedRecords = getScopedRecords();
+      const nums = zodiacMap2026[sx] || [];
+      const matched = scopedRecords.filter(r => r.special.sx === sx);
+      const numberMatched = scopedRecords.filter(r => nums.includes(r.special.num));
+      const recentMatched = scopedRecords.slice(0, range).filter(r => r.special.sx === sx);
+      const lastIndex = scopedRecords.findIndex(r => r.special.sx === sx);
+      const last = matched[0];
+      const colorRows = countBy(matched, r => r.special.color);
+      const colorText = colorRows.length ? colorTagList(colorRows) : "无历史记录";
+      const hotNums = countBy(numberMatched, r => pad(r.special.num)).slice(0, 5).map(x => x[0] + "号" + x[1] + "次").join(" / ") || "无历史记录";
+      return `<div class="analysis-card">
+        <div class="toolbar" style="justify-content:space-between;">
+          <strong>${sx}</strong>
+          <span class="tag">生肖分析</span>
+        </div>
+        <div class="kv">
+          <span>拆解号码</span><span>${nums.map(n => pad(n)).join("、")}</span>
+          <span>${getSelectedYear()}年次数</span><span>${matched.length} 次</span>
+          <span>最近出现</span><span>${last ? last.period + " / " + last.date + " / " + last.special.raw : "从未出现"}</span>
+          <span>间隔期数</span><span>${lastIndex === -1 ? scopedRecords.length : lastIndex} 期</span>
+          <span>近期出现</span><span>最近 ${range} 期 ${recentMatched.length} 次</span>
+          <span>常见波色</span><span>${colorText}</span>
+          <span>拆号热度</span><span>${hotNums}</span>
+        </div>
+      </div>`;
+    }
+
+    function renderReference() {
+      document.getElementById("referenceRows").innerHTML = sxOrder.map(sx => {
+        const chips = zodiacMap2026[sx].map(num => {
+          const ref = numberReference2026[num];
+          return `<span class="number-chip ${colorClass(ref.color)}">${pad(num)} ${ref.color}</span>`;
+        }).join("");
+        return `<tr><td><strong>${sx}</strong></td><td>${chips}</td></tr>`;
+      }).join("");
+    }
+
+    function streakKey(record, type) {
+      if (type === "波色") return record.special.color;
+      if (type === "生肖") return record.special.sx;
+      if (type === "单双") return record.special.num % 2 ? "单" : "双";
+      if (type === "大小") return record.special.num >= 25 ? "大" : "小";
+      return pad(record.special.num);
+    }
+
+    function getCurrentStreak(list, type) {
+      if (!list.length) return { type, key: "-", len: 0, start: "-", end: "-" };
+      const key = streakKey(list[0], type);
+      let len = 0;
+      for (const record of list) {
+        if (streakKey(record, type) !== key) break;
+        len += 1;
+      }
+      const endRecord = list[len - 1];
+      return { type, key, len, start: endRecord.date, end: list[0].date };
+    }
+
+    function getMaxStreak(list, type) {
+      const asc = [...list].reverse();
+      let best = { type, key: "-", len: 0, start: "-", end: "-" };
+      let current = { key: null, len: 0, start: "-" };
+      asc.forEach(record => {
+        const key = streakKey(record, type);
+        if (key === current.key) {
+          current.len += 1;
+        } else {
+          current = { key, len: 1, start: record.date };
+        }
+        if (current.len > best.len) {
+          best = { type, key, len: current.len, start: current.start, end: record.date };
+        }
+      });
+      return best;
+    }
+
+    function streakValue(streak) {
+      if (streak.type === "波色") return colorTag(streak.key, streak.key + "波");
+      return `<span class="tag neutral">${streak.key}</span>`;
+    }
+
+    function renderStreakList(id, rows) {
+      document.getElementById(id).innerHTML = rows.map(row => `
+        <div class="bar-row" style="grid-template-columns:72px 1fr 92px;">
+          <span>${row.type}</span>
+          <span>${streakValue(row)} 连续 ${row.len} 期</span>
+          <span>${row.start} 至 ${row.end}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderStreaks() {
+      const scopedRecords = getScopedRecords();
+      const types = ["波色", "生肖", "单双", "大小"];
+      renderStreakList("currentStreak", types.map(type => getCurrentStreak(scopedRecords, type)));
+      renderStreakList("maxStreak", types.map(type => getMaxStreak(scopedRecords, type)));
+    }
+
+    function renderMonthly() {
+      const scopedRecords = getScopedRecords();
+      const months = [...new Set(scopedRecords.map(r => r.date.slice(0, 7)))].sort((a, b) => b.localeCompare(a));
+      document.getElementById("monthlyRows").innerHTML = months.map(month => {
+        const list = scopedRecords.filter(r => r.date.startsWith(month));
+        const topNum = countBy(list, r => pad(r.special.num))[0] || ["-", 0];
+        const topSx = countBy(list, r => r.special.sx)[0] || ["-", 0];
+        const colors = countBy(list, r => r.special.color);
+        const odd = list.filter(r => r.special.num % 2).length;
+        const big = list.filter(r => r.special.num >= 25).length;
+        return `<tr>
+          <td>${month}</td>
+          <td>${list.length}</td>
+          <td>${topNum[0]} / ${topNum[1]}次</td>
+          <td>${topSx[0]} / ${topSx[1]}次</td>
+          <td>${colorTagList(colors)}</td>
+          <td>单${odd} / 双${list.length - odd}</td>
+          <td>大${big} / 小${list.length - big}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function renderCompare() {
+      const range = Number(document.getElementById("compareRange").value);
+      const parsed = parseAnalysisInput(document.getElementById("compareNumbers").value);
+      const directNums = parsed.numbers;
+      const expandedNums = parsed.zodiacs.flatMap(sx => zodiacMap2026[sx] || []);
+      const allInputNums = [...directNums, ...expandedNums];
+      const inputCount = new Map();
+      allInputNums.forEach(num => inputCount.set(num, (inputCount.get(num) || 0) + 1));
+      const duplicateNums = [...inputCount.entries()].filter(([, count]) => count > 1).map(([num]) => num).sort((a, b) => a - b);
+      const nums = [...new Set(allInputNums)].sort((a, b) => a - b);
+      const invalid = nums.filter(n => !Number.isInteger(n) || n < 1 || n > 49);
+      if (invalid.length) throw new Error("号码必须在 01-49 之间");
+      if (!nums.length) throw new Error("请输入 01-49 的号码，或输入鼠、牛、虎等生肖");
+      const scopedRecords = getScopedRecords();
+      document.getElementById("duplicateSummary").innerHTML = `
+        <div><strong>重复号码：</strong>${duplicateNums.length ? duplicateNums.map(n => `<span class="tag neutral">${pad(n)}</span>`).join(" ") : "无"}</div>
+        <div style="margin-top:8px;"><strong>剔除重复后的号码：</strong>${nums.map(n => `<span class="tag neutral">${pad(n)}</span>`).join(" ")}</div>
+      `;
+      document.getElementById("compareRows").innerHTML = nums.map(num => {
+        const matched = scopedRecords.filter(r => r.special.num === num);
+        const lastIndex = scopedRecords.findIndex(r => r.special.num === num);
+        const last = matched[0];
+        const recent = scopedRecords.slice(0, range).filter(r => r.special.num === num).length;
+        const ref = numberReference2026[num];
+        const isDuplicate = duplicateNums.includes(num);
+        return `<tr class="${isDuplicate ? "duplicate-row" : ""}">
+          <td>${pad(num)} ${isDuplicate ? `<span class="tag">重复</span>` : ""}</td>
+          <td>${ref ? ref.sx : "-"}</td>
+          <td>${ref ? colorTag(ref.color, ref.color + "波") : "-"}</td>
+          <td>${matched.length}</td>
+          <td>${last ? last.period + " / " + last.date : "从未出现"}</td>
+          <td>${lastIndex === -1 ? scopedRecords.length : lastIndex}</td>
+          <td>${recent}</td>
+          <td>${statusForNumber(matched.length, lastIndex, scopedRecords.length)}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function upsertRecords(nextRecords) {
+      const map = new Map(records.map(r => [recordKey(r), r]));
+      nextRecords.forEach(r => map.set(recordKey(r), r));
+      records = sortRecords([...map.values()]);
+      saveRecords();
+      render();
+    }
+
+    function openAddModal() {
+      document.getElementById("addModal").classList.add("open");
+      document.getElementById("addModal").setAttribute("aria-hidden", "false");
+      document.getElementById("period").focus();
+    }
+
+    function closeAddModal() {
+      document.getElementById("addModal").classList.remove("open");
+      document.getElementById("addModal").setAttribute("aria-hidden", "true");
+    }
+
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+        tab.classList.add("active");
+        ["dashboard", "records", "analysis", "compare", "streak", "monthly", "reference"].forEach(name => {
+          document.getElementById(name + "Panel").classList.toggle("hidden", tab.dataset.tab !== name);
+        });
+      });
+    });
+
+    document.getElementById("addForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const msg = document.getElementById("formMsg");
+      try {
+        const period = normalizePeriod(document.getElementById("period").value);
+        const date = document.getElementById("drawDate").value;
+        const num = Number(document.getElementById("num").value);
+        const sx = document.getElementById("sx").value;
+        const color = document.getElementById("color").value;
+        const special = parseBall(pad(num) + sx + "(" + color + ")");
+        upsertRecords([{ period, date, special }]);
+        msg.textContent = "已保存：" + period + " " + special.raw;
+        msg.className = "success-text";
+        event.target.reset();
+        closeAddModal();
+      } catch (error) {
+        msg.textContent = error.message;
+        msg.className = "danger-text";
+      }
+    });
+
+    document.getElementById("openAddModalBtn").addEventListener("click", openAddModal);
+    document.getElementById("closeAddModalBtn").addEventListener("click", closeAddModal);
+    document.getElementById("addModal").addEventListener("click", event => {
+      if (event.target.id === "addModal") closeAddModal();
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") closeAddModal();
+    });
+
+    document.getElementById("analyzeBtn").addEventListener("click", () => {
+      try {
+        analyzeNumbers();
+      } catch (error) {
+        document.getElementById("analysisResult").innerHTML = `<div class="danger-text">${error.message}</div>`;
+      }
+    });
+
+    document.getElementById("compareBtn").addEventListener("click", () => {
+      try {
+        renderCompare();
+      } catch (error) {
+        document.getElementById("duplicateSummary").innerHTML = "";
+        document.getElementById("compareRows").innerHTML = `<tr><td colspan="8" class="danger-text">${error.message}</td></tr>`;
+      }
+    });
+
+    document.getElementById("recordSearch").addEventListener("input", renderRecords);
+
+    document.getElementById("recordRows").addEventListener("click", event => {
+      const key = event.target.dataset.delete;
+      if (!key) return;
+      const target = records.find(r => recordKey(r) === key);
+      if (!target) return;
+      if (!confirm("确认删除 " + target.date + " " + target.period + " 吗？")) return;
+      records = records.filter(r => recordKey(r) !== key);
+      saveRecords();
+      render();
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      if (!confirm("确认恢复初始 127 条数据吗？当前本地修改会被覆盖。")) return;
+      records = parseCsv(seedCsv);
+      saveRecords();
+      render();
+    });
+
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const scopedRecords = getScopedRecords();
+      const csv = ["期号,开奖时间,平一,平二,平三,平四,平五,平六,特码"]
+        .concat(scopedRecords.map(r => [r.period, r.date, "", "", "", "", "", "", r.special.raw].join(",")))
+        .join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "tema_records.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    render();
+    document.getElementById("buyNumbers").value = "07, 01, 45";
+    analyzeNumbers();
+  </script>
+</body>
+</html>
