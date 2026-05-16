@@ -535,8 +535,9 @@
   <header>
     <h1>分析看板</h1>
     <div class="toolbar">
-      <span class="tag neutral">版本 2026-05-08-mobile2</span>
+      <span class="tag neutral">版本 2026-05-16-data135</span>
       <span class="tag" id="dataStatus">本地数据</span>
+      <button id="updateDataBtn" class="primary">更新数据</button>
       <button id="openAddModalBtn" class="primary">新增一期</button>
       <button id="resetBtn" class="danger">恢复初始数据</button>
     </div>
@@ -544,6 +545,7 @@
 
   <main>
     <div class="notice">本工具只基于历史记录做统计分析，不承诺中奖，也不保证任何号码未来会出现。</div>
+    <div id="updateMsg" class="footer-note"></div>
     <section class="layout">
       <div class="grid">
         <div class="grid cards" id="metrics"></div>
@@ -781,6 +783,14 @@
 
   <script>
     const seedCsv = `期号,开奖时间,平一,平二,平三,平四,平五,平六,特码
+135期,2026-05-15,08猪(红),35猴(红),09狗(蓝),20猪(蓝),18牛(红),47猴(蓝),30牛(红)
+134期,2026-05-14,24羊(红),46鸡(红),40兔(红),44猪(绿),22鸡(绿),49马(绿),37马(蓝)
+133期,2026-05-13,38蛇(绿),14蛇(蓝),23猴(红),01马(红),26蛇(蓝),44猪(绿),07鼠(红)
+132期,2026-05-12,48羊(蓝),11猴(绿),20猪(蓝),44猪(绿),39龙(绿),35猴(红),30牛(红)
+131期,2026-05-11,12羊(红),40兔(红),21狗(绿),32猪(绿),01马(红),25马(蓝),07鼠(红)
+130期,2026-05-10,41虎(蓝),26蛇(蓝),09狗(蓝),11猴(绿),05虎(绿),25马(蓝),29虎(红)
+129期,2026-05-09,34鸡(红),07鼠(红),40兔(红),21狗(绿),17虎(绿),25马(蓝),41虎(蓝)
+128期,2026-05-08,25马(蓝),46鸡(红),02蛇(红),07鼠(红),45狗(红),42牛(蓝),37马(蓝)
 127期,2026-05-07,14蛇(蓝),08猪(红),27龙(绿),03龙(蓝),07鼠(红),29虎(红),45狗(红)
 126期,2026-05-06,15龙(蓝),09狗(蓝),05虎(绿),03龙(蓝),01马(红),10鸡(蓝),49马(绿)
 125期,2026-05-05,16兔(绿),19鼠(红),07鼠(红),30牛(红),38蛇(绿),39龙(绿),31鼠(蓝)
@@ -909,7 +919,8 @@
 002期,2026-01-02,48马(蓝),07猪(红),04虎(蓝),03兔(蓝),15兔(蓝),11羊(绿),22猴(绿)
 001期,2026-01-01,27兔(绿),08狗(红),43猪(绿),33鸡(绿),42鼠(蓝),11羊(绿),29牛(红)`;
 
-    const storeKey = "tema-dashboard-records-2026-v1";
+    const storeKey = "tema-dashboard-records-2026-v2";
+    const dataSourceUrl = "https://2025kj.zkclhb.com:2025/am.html";
     const sxOrder = ["马", "蛇", "龙", "兔", "虎", "牛", "鼠", "猪", "狗", "鸡", "猴", "羊"];
     const colorOrder = ["红", "蓝", "绿"];
     const zodiacMap2026 = {
@@ -957,6 +968,24 @@
           special: parseBall(cells[8])
         };
       });
+    }
+
+    function parseRemoteHtml(html) {
+      const colorName = { red: "红", blue: "蓝", green: "绿" };
+      const rows = [];
+      const matches = html.matchAll(/<li>\s*<dt><b>(\d+)<\/b>期\(开奖时间:(\d{4}-\d{2}-\d{2})\)<\/dt>\s*<dl>([\s\S]*?)<\/dl>\s*<\/li>/g);
+      for (const match of matches) {
+        if (!match[2].startsWith("2026-")) continue;
+        const balls = [...match[3].matchAll(/<span class=\"(red|blue|green)\">(\d{2})<\/span><b>([^<]+)<\/b>/g)]
+          .map(item => item[2] + item[3] + "(" + colorName[item[1]] + ")");
+        if (balls.length !== 7) continue;
+        rows.push({
+          period: pad(Number(match[1]), 3) + "期",
+          date: match[2],
+          special: parseBall(balls[6])
+        });
+      }
+      return sortRecords(rows);
     }
 
     function loadRecords() {
@@ -1399,6 +1428,41 @@
       render();
     }
 
+    function appendNewRecords(nextRecords) {
+      const existing = new Set(records.map(recordKey));
+      const additions = nextRecords.filter(record => !existing.has(recordKey(record)));
+      if (!additions.length) return 0;
+      records = sortRecords([...records, ...additions]);
+      saveRecords();
+      render();
+      return additions.length;
+    }
+
+    async function updateFromSource() {
+      const button = document.getElementById("updateDataBtn");
+      const msg = document.getElementById("updateMsg");
+      button.disabled = true;
+      button.textContent = "更新中";
+      msg.textContent = "正在抓取最新 2026 年记录...";
+      msg.className = "footer-note";
+      try {
+        const response = await fetch(dataSourceUrl, { cache: "no-store" });
+        if (!response.ok) throw new Error("数据源返回异常：" + response.status);
+        const html = await response.text();
+        const fetched = parseRemoteHtml(html);
+        if (!fetched.length) throw new Error("没有解析到 2026 年开奖记录");
+        const added = appendNewRecords(fetched);
+        msg.textContent = added ? "更新成功，新增 " + added + " 条记录。" : "数据已是最新，没有新增记录。";
+        msg.className = added ? "success-text" : "footer-note";
+      } catch (error) {
+        msg.textContent = "数据更新失败：浏览器可能拦截跨域请求，或数据源暂时不可访问。";
+        msg.className = "danger-text";
+      } finally {
+        button.disabled = false;
+        button.textContent = "更新数据";
+      }
+    }
+
     function openAddModal() {
       document.getElementById("addModal").classList.add("open");
       document.getElementById("addModal").setAttribute("aria-hidden", "false");
@@ -1467,6 +1531,8 @@
       }
     });
 
+    document.getElementById("updateDataBtn").addEventListener("click", updateFromSource);
+
     document.getElementById("recordSearch").addEventListener("input", renderRecords);
 
     document.getElementById("recordRows").addEventListener("click", event => {
@@ -1481,7 +1547,7 @@
     });
 
     document.getElementById("resetBtn").addEventListener("click", () => {
-      if (!confirm("确认恢复初始 127 条数据吗？当前本地修改会被覆盖。")) return;
+      if (!confirm("确认恢复初始 135 条数据吗？当前本地修改会被覆盖。")) return;
       records = parseCsv(seedCsv);
       saveRecords();
       render();
