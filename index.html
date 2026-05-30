@@ -25,14 +25,15 @@
       --warning-border: #ffd591;
     }
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
-      color: var(--text);
-      background: var(--bg);
-      line-height: 1.5;
-      -webkit-text-size-adjust: 100%;
-    }
+	    body {
+	      margin: 0;
+	      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+	      color: var(--text);
+	      background: var(--bg);
+	      line-height: 1.5;
+	      -webkit-text-size-adjust: 100%;
+	      overflow-x: hidden;
+	    }
     header {
       position: sticky;
       top: 0;
@@ -103,12 +104,40 @@
       color: var(--muted);
       font-size: 13px;
     }
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
+	    .toolbar {
+	      display: flex;
+	      flex-wrap: wrap;
+	      gap: 8px;
+	      align-items: center;
+	    }
+	    .header-row {
+	      display: flex;
+	      align-items: center;
+	      justify-content: space-between;
+	      gap: 12px;
+	      width: 100%;
+	    }
+	    .data-strip {
+	      display: flex;
+	      flex-wrap: wrap;
+	      gap: 6px;
+	      width: 100%;
+	    }
+	    .data-strip .tag {
+	      height: 28px;
+	      font-size: 13px;
+	    }
+	    .reset-small {
+	      min-height: 32px;
+	      height: 32px;
+	      flex: 0 0 auto;
+	      padding: 4px 10px;
+	      border-color: #ffccc7;
+	      background: #fff1f0;
+	      color: #cf1322;
+	      font-size: 13px;
+	      white-space: nowrap;
+	    }
     .tabs {
       display: flex;
       gap: 8px;
@@ -361,9 +390,86 @@
     .number-chip.red { color: #cf1322; border-color: #ffa39e; background: #fff1f0; }
     .number-chip.blue { color: #0958d9; border-color: #91caff; background: #e6f4ff; }
     .number-chip.green { color: #389e0d; border-color: #b7eb8f; background: #f6ffed; }
-    .duplicate-row td {
-      background: #fffbe6 !important;
-    }
+	    .duplicate-row td {
+	      background: #fffbe6 !important;
+	    }
+	    .result-list {
+	      display: grid;
+	      gap: 10px;
+	      margin-top: 16px;
+	    }
+	    .number-card {
+	      overflow: hidden;
+	      border: 1px solid #f0f0f0;
+	      border-radius: 8px;
+	      background: #fff;
+	    }
+	    .number-card.warn {
+	      border-color: #ffe58f;
+	      background: #fffbe6;
+	    }
+	    .number-card-head {
+	      display: flex;
+	      align-items: flex-start;
+	      justify-content: space-between;
+	      gap: 8px;
+	      padding: 12px;
+	      border-bottom: 1px solid #f0f0f0;
+	    }
+	    .number-title {
+	      display: flex;
+	      flex-wrap: wrap;
+	      gap: 6px;
+	      align-items: center;
+	      min-width: 0;
+	    }
+	    .number-code {
+	      font-size: 22px;
+	      line-height: 1;
+	      font-weight: 700;
+	    }
+	    .number-meta {
+	      display: inline-flex;
+	      flex-wrap: wrap;
+	      gap: 4px;
+	      align-items: center;
+	    }
+	    .number-money {
+	      flex: 0 0 auto;
+	      text-align: right;
+	      font-size: 12px;
+	      color: var(--muted);
+	    }
+	    .number-money strong {
+	      display: block;
+	      color: var(--text);
+	      font-size: 16px;
+	    }
+	    .detail-grid {
+	      display: grid;
+	      grid-template-columns: repeat(2, minmax(0, 1fr));
+	      gap: 1px;
+	      background: #f0f0f0;
+	    }
+	    .detail-item {
+	      min-width: 0;
+	      padding: 9px 10px;
+	      background: #fff;
+	    }
+	    .number-card.warn .detail-item {
+	      background: #fffdf0;
+	    }
+	    .detail-label {
+	      color: var(--muted);
+	      font-size: 12px;
+	    }
+	    .detail-value {
+	      margin-top: 2px;
+	      color: var(--text);
+	      font-size: 14px;
+	      font-weight: 600;
+	      word-break: break-word;
+	    }
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -466,10 +572,18 @@
       .metric .sub {
         font-size: 12px;
       }
-      .toolbar {
-        width: 100%;
-        gap: 6px;
-      }
+	    .toolbar {
+	      width: 100%;
+	      gap: 6px;
+	    }
+	    .header-row {
+	      align-items: center;
+	    }
+	    .reset-small {
+	      width: auto;
+	      min-width: 76px;
+	      flex: 0 0 auto;
+	    }
       button, .file-label {
         min-height: 40px;
         flex: 1;
@@ -542,10 +656,11 @@
       flex-direction: column;
       gap: 10px;
     }
-    main {
-      max-width: 520px;
-      padding: 12px;
-    }
+	    main {
+	      max-width: 520px;
+	      width: 100%;
+	      padding: 12px;
+	    }
     .layout,
     .grid.two,
     .form-row,
@@ -558,10 +673,11 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
     }
-    .card {
-      padding: 14px;
-      box-shadow: none;
-    }
+	    .card {
+	      padding: 14px;
+	      box-shadow: none;
+	      min-width: 0;
+	    }
     .metric .value {
       font-size: 16px;
       line-height: 1.25;
@@ -628,20 +744,34 @@
       font-weight: 650;
       word-break: break-word;
     }
-    .result-block {
-      margin-top: 16px;
-    }
-  </style>
+	    .result-block {
+	      margin-top: 16px;
+	    }
+	    @media (max-width: 360px) {
+	      .detail-grid {
+	        grid-template-columns: 1fr;
+	      }
+	      .number-card-head {
+	        flex-direction: column;
+	      }
+	      .number-money {
+	        width: 100%;
+	        text-align: left;
+	      }
+	    }
+	  </style>
 </head>
 <body>
-  <header>
-    <h1>分析看板</h1>
-    <div class="toolbar">
-      <span class="tag neutral">版本 2026-05-30-data150</span>
-      <span class="tag" id="dataStatus">本地数据</span>
-      <button id="resetBtn" class="danger">恢复初始数据</button>
-    </div>
-  </header>
+	  <header>
+	    <div class="header-row">
+	      <h1>分析看板</h1>
+	      <button id="resetBtn" class="reset-small">恢复</button>
+	    </div>
+	    <div class="data-strip">
+	      <span class="tag neutral">版本 2026-05-30-data150</span>
+	      <span class="tag" id="dataStatus">本地数据</span>
+	    </div>
+	  </header>
 
   <main>
     <div class="notice">本工具只基于历史记录做统计分析，不承诺中奖，也不保证任何号码未来会出现。</div>
@@ -737,27 +867,7 @@
             <button id="simulateBtn" class="primary">开始分析</button>
             <div id="simulateSummary" class="result-block"></div>
             <div id="betAdvice" class="notice result-block"></div>
-            <div class="table-wrap result-block">
-              <table>
-                <thead>
-                  <tr>
-                    <th>号码</th>
-                    <th>生肖</th>
-                    <th>波色</th>
-                    <th>金额</th>
-                    <th>重复</th>
-                    <th>获得</th>
-                    <th>命中盈亏</th>
-                    <th>状态</th>
-                    <th>最近出现</th>
-                    <th>间隔</th>
-                    <th>近期</th>
-                    <th>历史</th>
-                  </tr>
-                </thead>
-                <tbody id="simulateRows"></tbody>
-              </table>
-            </div>
+            <div id="simulateRows" class="result-list"></div>
           </div>
 
           <div id="streakPanel" class="hidden">
@@ -1483,20 +1593,31 @@
         const isDuplicate = plan.duplicates.includes(num);
         const state = pnl < 0 ? "中而不赚" : targetPnl < 0 ? "未达目标" : "可盈利";
         const stateClass = state === "可盈利" ? "green" : state === "中而不赚" ? "red" : "blue";
-        return `<tr class="${isDuplicate || pnl < 0 ? "duplicate-row" : ""}">
-          <td>${pad(num)} ${isDuplicate ? `<span class="tag">重复</span>` : ""}</td>
-          <td>${ref ? ref.sx : "-"}</td>
-          <td>${ref ? colorTag(ref.color, ref.color + "波") : "-"}</td>
-          <td>${money(amount)}</td>
-          <td>${repeatCount}</td>
-          <td>${money(reward)}</td>
-          <td class="${pnl < 0 ? "danger-text" : "success-text"}">${money(pnl)}</td>
-          <td><span class="tag ${stateClass}">${state}</span></td>
-          <td>${history.last ? history.last.period + " / " + history.last.date : "从未出现"}</td>
-          <td>${history.lastIndex === -1 ? history.total : history.lastIndex}</td>
-          <td>${history.recent}</td>
-          <td>${history.matched.length}</td>
-        </tr>`;
+        return `<div class="number-card ${isDuplicate || pnl < 0 ? "warn" : ""}">
+          <div class="number-card-head">
+            <div class="number-title">
+              <span class="number-code">${pad(num)}</span>
+              <span class="number-meta">
+                <span class="tag neutral">${ref ? ref.sx : "-"}</span>
+                ${ref ? colorTag(ref.color, ref.color + "波") : ""}
+                ${isDuplicate ? `<span class="tag">重复</span>` : ""}
+                <span class="tag ${stateClass}">${state}</span>
+              </span>
+            </div>
+            <div class="number-money">
+              投入金额
+              <strong>${money(amount)}</strong>
+            </div>
+          </div>
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">重复次数</div><div class="detail-value">${repeatCount}</div></div>
+            <div class="detail-item"><div class="detail-label">命中获得</div><div class="detail-value">${money(reward)}</div></div>
+            <div class="detail-item"><div class="detail-label">命中盈亏</div><div class="detail-value ${pnl < 0 ? "danger-text" : "success-text"}">${money(pnl)}</div></div>
+            <div class="detail-item"><div class="detail-label">最近出现</div><div class="detail-value">${history.last ? history.last.period + " / " + history.last.date : "从未出现"}</div></div>
+            <div class="detail-item"><div class="detail-label">间隔期数</div><div class="detail-value">${history.lastIndex === -1 ? history.total : history.lastIndex}</div></div>
+            <div class="detail-item"><div class="detail-label">近期 / 历史</div><div class="detail-value">${history.recent} / ${history.matched.length}</div></div>
+          </div>
+        </div>`;
       });
       const losingCount = plan.nums.filter(num => plan.amountMap.get(num) * odds - plan.totalInput - roundLoss < 0).length;
       renderSummary("simulateSummary", [
