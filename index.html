@@ -529,16 +529,116 @@
         font-size: 12px;
       }
     }
+    /* H5 first layout: the product is primarily used on phones. */
+    body {
+      background: #f5f5f5;
+    }
+    header {
+      position: static;
+      height: auto;
+      min-height: 56px;
+      padding: 12px;
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 10px;
+    }
+    main {
+      max-width: 520px;
+      padding: 12px;
+    }
+    .layout,
+    .grid.two,
+    .form-row,
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .grid.cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .card {
+      padding: 14px;
+      box-shadow: none;
+    }
+    .metric .value {
+      font-size: 16px;
+      line-height: 1.25;
+    }
+    .metric .label,
+    .metric .sub {
+      font-size: 12px;
+    }
+    .toolbar {
+      width: 100%;
+      gap: 6px;
+    }
+    button,
+    .file-label {
+      min-height: 40px;
+      flex: 1;
+    }
+    input,
+    select,
+    textarea {
+      min-height: 40px;
+      font-size: 16px;
+    }
+    textarea {
+      min-height: 132px;
+    }
+    .tabs {
+      margin: -2px -14px 14px;
+      padding: 0 14px;
+    }
+    .tab {
+      min-height: 42px;
+      padding: 10px 10px;
+    }
+    .table-wrap {
+      max-height: none;
+    }
+    .record-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .record-actions input {
+      max-width: none !important;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .summary-item {
+      padding: 10px;
+      border: 1px solid #f0f0f0;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+    .summary-item .label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .summary-item .value {
+      margin-top: 4px;
+      font-size: 16px;
+      font-weight: 650;
+      word-break: break-word;
+    }
+    .result-block {
+      margin-top: 16px;
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>分析看板</h1>
     <div class="toolbar">
-      <span class="tag neutral">版本 2026-05-26-data145</span>
+      <span class="tag neutral">版本 2026-05-30-data150</span>
       <span class="tag" id="dataStatus">本地数据</span>
-      <button id="updateDataBtn" class="primary">更新数据</button>
-      <button id="openAddModalBtn" class="primary">新增一期</button>
       <button id="resetBtn" class="danger">恢复初始数据</button>
     </div>
   </header>
@@ -552,16 +652,15 @@
 
         <div class="card">
           <div class="tabs">
-            <button class="tab active" data-tab="dashboard">趋势看板</button>
+            <button class="tab active" data-tab="simulate">投注分析</button>
+            <button class="tab" data-tab="dashboard">趋势看板</button>
             <button class="tab" data-tab="records">开奖记录</button>
-            <button class="tab" data-tab="analysis">购前分析</button>
-            <button class="tab" data-tab="compare">多号码比对</button>
             <button class="tab" data-tab="streak">连续走势</button>
             <button class="tab" data-tab="monthly">月度统计</button>
             <button class="tab" data-tab="reference">号码参考</button>
           </div>
 
-          <div id="dashboardPanel">
+          <div id="dashboardPanel" class="hidden">
             <div class="grid two">
               <div>
                 <h3>特码号码热度</h3>
@@ -613,61 +712,50 @@
             </div>
           </div>
 
-          <div id="analysisPanel" class="hidden">
-            <h2>购前号码分析</h2>
+          <div id="simulatePanel">
+            <h2>投注分析</h2>
             <div class="form-row">
               <div>
-                <label for="buyNumbers">准备分析的号码或生肖</label>
-                <textarea id="buyNumbers" placeholder="例如：07, 14, 45 或 鼠龙虎马"></textarea>
+                <label for="simulateInput">投注内容</label>
+                <textarea id="simulateInput" placeholder="01.03.13.23.25.31.35.29&#10;06.08.18.26.28.30.32.42&#10;各号20元&#10;&#10;牛虎羊鸡&#10;各号10元"></textarea>
               </div>
               <div>
-                <label for="recentRange">近期范围</label>
-                <select id="recentRange">
-                  <option value="10">最近 10 期</option>
-                  <option value="30" selected>最近 30 期</option>
-                  <option value="50">最近 50 期</option>
-                </select>
-                <div class="footer-note">支持号码和生肖混合输入。生肖会按 2026 版号码表自动拆解。</div>
-              </div>
-            </div>
-            <button id="analyzeBtn" class="primary">开始分析</button>
-            <div id="analysisResult" class="analysis-grid" style="margin-top: 16px;"></div>
-          </div>
-
-          <div id="comparePanel" class="hidden">
-            <h2>多号码比对</h2>
-            <div class="form-row">
-              <div>
-                <label for="compareNumbers">要比对的号码或生肖</label>
-                <textarea id="compareNumbers" placeholder="例如：07, 14, 45 或 鼠龙虎马"></textarea>
-              </div>
-              <div>
-                <label for="compareRange">近期范围</label>
+                <label for="simulateOdds">赔率</label>
+                <input id="simulateOdds" inputmode="decimal" value="47">
+                <label for="roundLoss" style="margin-top:12px;">本轮已亏损（非必填）</label>
+                <input id="roundLoss" inputmode="decimal" placeholder="默认0">
+                <label for="targetProfit" style="margin-top:12px;">本期目标利润（非必填）</label>
+                <input id="targetProfit" inputmode="decimal" placeholder="默认0">
+                <label for="compareRange" style="margin-top:12px;">近期范围</label>
                 <select id="compareRange">
                   <option value="10">最近 10 期</option>
                   <option value="30" selected>最近 30 期</option>
                   <option value="50">最近 50 期</option>
                 </select>
-                <div class="footer-note">生肖会拆成对应号码后进入同一张对比表。</div>
               </div>
             </div>
-            <button id="compareBtn" class="primary">开始比对</button>
-            <div id="duplicateSummary" class="notice" style="margin-top: 16px;"></div>
-            <div class="table-wrap" style="margin-top: 16px;">
+            <button id="simulateBtn" class="primary">开始分析</button>
+            <div id="simulateSummary" class="result-block"></div>
+            <div id="betAdvice" class="notice result-block"></div>
+            <div class="table-wrap result-block">
               <table>
                 <thead>
                   <tr>
                     <th>号码</th>
                     <th>生肖</th>
                     <th>波色</th>
-                    <th>次数</th>
+                    <th>金额</th>
+                    <th>重复</th>
+                    <th>获得</th>
+                    <th>命中盈亏</th>
+                    <th>状态</th>
                     <th>最近出现</th>
                     <th>间隔</th>
-                    <th>近期次数</th>
-                    <th>状态</th>
+                    <th>近期</th>
+                    <th>历史</th>
                   </tr>
                 </thead>
-                <tbody id="compareRows"></tbody>
+                <tbody id="simulateRows"></tbody>
               </table>
             </div>
           </div>
@@ -783,6 +871,11 @@
 
   <script>
     const seedCsv = `期号,开奖时间,平一,平二,平三,平四,平五,平六,特码
+150期,2026-05-30,11猴(绿),04兔(蓝),22鸡(绿),25马(蓝),44猪(绿),19鼠(红),09狗(蓝)
+149期,2026-05-29,28兔(绿),30牛(红),44猪(绿),45狗(红),04兔(蓝),20猪(蓝),27龙(绿)
+148期,2026-05-28,28兔(绿),24羊(红),31鼠(蓝),23猴(红),04兔(蓝),27龙(绿),48羊(蓝)
+147期,2026-05-27,29虎(红),40兔(红),06牛(绿),18牛(红),31鼠(蓝),10鸡(蓝),13马(红)
+146期,2026-05-26,11猴(绿),30牛(红),20猪(蓝),19鼠(红),05虎(绿),16兔(绿),42牛(蓝)
 145期,2026-05-25,36羊(蓝),43鼠(绿),25马(蓝),32猪(绿),37马(蓝),18牛(红),05虎(绿)
 144期,2026-05-24,47猴(蓝),31鼠(蓝),29虎(红),33狗(绿),22鸡(绿),26蛇(蓝),43鼠(绿)
 143期,2026-05-23,13马(红),26蛇(蓝),18牛(红),32猪(绿),02蛇(红),33狗(绿),44猪(绿)
@@ -1000,8 +1093,11 @@
 
     function loadRecords() {
       const saved = localStorage.getItem(storeKey);
-      const data = saved ? JSON.parse(saved) : parseCsv(seedCsv);
-      return sortRecords(data);
+      const seeded = parseCsv(seedCsv);
+      if (!saved) return sortRecords(seeded);
+      const map = new Map(seeded.map(r => [recordKey(r), r]));
+      JSON.parse(saved).forEach(r => map.set(recordKey(r), r));
+      return sortRecords([...map.values()]);
     }
 
     function saveRecords() {
@@ -1227,77 +1323,195 @@
       };
     }
 
-    function analyzeNumbers() {
-      const range = Number(document.getElementById("recentRange").value);
-      const input = document.getElementById("buyNumbers").value;
-      const parsed = parseAnalysisInput(input);
-      const expandedNums = parsed.zodiacs.flatMap(sx => zodiacMap2026[sx] || []);
-      const unique = [...new Set([...parsed.numbers, ...expandedNums])];
-      const invalid = unique.filter(n => !Number.isInteger(n) || n < 1 || n > 49);
-      if (invalid.length) throw new Error("号码必须在 01-49 之间");
-      if (!unique.length && !parsed.zodiacs.length) throw new Error("请输入 01-49 的号码，或输入鼠、牛、虎等生肖");
-      const zodiacCards = parsed.zodiacs.map(sx => zodiacAnalysisCard(sx, range));
-      const numberCards = unique.map(num => analysisCard(num, range));
-      document.getElementById("analysisResult").innerHTML = [...zodiacCards, ...numberCards].join("");
+    function parseAmountLine(line) {
+      const normalized = line.trim();
+      if (!normalized) return null;
+      const match = normalized.match(/^(?:各号|每号)?\s*(\d+(?:\.\d+)?)\s*元?$/);
+      if (!match) return null;
+      if (!/[元号]/.test(normalized)) return null;
+      return Number(match[1]);
     }
 
-    function analysisCard(num, range) {
+    function extractBetItems(text) {
+      const nums = [...text.matchAll(/\d{1,2}/g)].map(match => Number(match[0]));
+      const zodiacs = [];
+      for (const char of text) {
+        if (sxOrder.includes(char)) zodiacs.push(char);
+      }
+      const items = [];
+      nums.forEach(num => items.push({ num, source: "号码" }));
+      zodiacs.forEach(sx => {
+        (zodiacMap2026[sx] || []).forEach(num => items.push({ num, source: sx }));
+      });
+      return items;
+    }
+
+    function parseBetPlan(text) {
+      const groups = [];
+      let pending = [];
+      const lines = text.split(/\r?\n/);
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line) continue;
+        const amount = parseAmountLine(line);
+        if (amount !== null) {
+          const content = pending.join("\n").trim();
+          if (!content) throw new Error("金额前缺少号码或生肖");
+          const items = extractBetItems(content);
+          if (!items.length) throw new Error("没有识别到有效号码或生肖：" + content);
+          groups.push({ name: "组合" + (groups.length + 1), content, amount, items });
+          pending = [];
+        } else {
+          pending.push(line);
+        }
+      }
+      if (pending.length) throw new Error("存在未设置金额的号码或生肖，请在该组后补充“各号XX元”");
+      if (!groups.length) throw new Error("请输入投注内容，例如号码后跟“各号20元”");
+
+      const amountMap = new Map();
+      const countMap = new Map();
+      const sourceMap = new Map();
+      let rawCount = 0;
+      for (const group of groups) {
+        for (const item of group.items) {
+          if (!Number.isInteger(item.num) || item.num < 1 || item.num > 49) {
+            throw new Error("号码必须在 01-49 之间");
+          }
+          rawCount += 1;
+          amountMap.set(item.num, (amountMap.get(item.num) || 0) + group.amount);
+          countMap.set(item.num, (countMap.get(item.num) || 0) + 1);
+          const sources = sourceMap.get(item.num) || [];
+          sources.push(item.source + " " + group.amount + "元");
+          sourceMap.set(item.num, sources);
+        }
+      }
+      const nums = [...amountMap.keys()].sort((a, b) => a - b);
+      const totalInput = [...amountMap.values()].reduce((sum, value) => sum + value, 0);
+      const duplicates = nums.filter(num => (countMap.get(num) || 0) > 1);
+      const avgAmount = totalInput / Math.max(nums.length, 1);
+      const heavyNums = nums.filter(num => amountMap.get(num) > avgAmount);
+      return { groups, nums, amountMap, countMap, sourceMap, rawCount, totalInput, duplicates, heavyNums, avgAmount };
+    }
+
+    function money(value) {
+      const rounded = Math.round(value * 100) / 100;
+      return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+    }
+
+    function numTags(nums) {
+      return nums.length ? nums.map(num => `<span class="tag neutral">${pad(num)}</span>`).join(" ") : "无";
+    }
+
+    function renderSummary(id, items) {
+      document.getElementById(id).innerHTML = `<div class="summary-grid">${items.map(item => `
+        <div class="summary-item">
+          <div class="label">${item.label}</div>
+          <div class="value">${item.value}</div>
+        </div>
+      `).join("")}</div>`;
+    }
+
+    function getNumberHistory(num, range = 30) {
       const scopedRecords = getScopedRecords();
-      const code = pad(num);
       const matched = scopedRecords.filter(r => r.special.num === num);
-      const recentMatched = scopedRecords.slice(0, range).filter(r => r.special.num === num);
       const lastIndex = scopedRecords.findIndex(r => r.special.num === num);
       const last = matched[0];
-      const sxText = countBy(matched, r => r.special.sx).map(x => x[0] + x[1]).join(" / ") || "无历史记录";
-      const colorRows = countBy(matched, r => r.special.color);
-      const colorText = colorRows.length ? colorTagList(colorRows) : "无历史记录";
-      const ref = numberReference2026[num];
-      const status = statusForNumber(matched.length, lastIndex, scopedRecords.length);
-      return `<div class="analysis-card">
-        <div class="toolbar" style="justify-content:space-between;">
-          <strong>${code}</strong>
-          <span class="tag">${status}</span>
-        </div>
-        <div class="kv">
-          <span>${getSelectedYear()}年次数</span><span>${matched.length} 次</span>
-          <span>最近出现</span><span>${last ? last.period + " / " + last.date : "从未出现"}</span>
-          <span>间隔期数</span><span>${lastIndex === -1 ? scopedRecords.length : lastIndex} 期</span>
-          <span>近期出现</span><span>最近 ${range} 期 ${recentMatched.length} 次</span>
-          <span>参考生肖</span><span>${ref ? ref.sx : "-"}</span>
-          <span>参考波色</span><span>${ref ? colorTag(ref.color, ref.color + "波") : "-"}</span>
-          <span>生肖记录</span><span>${sxText}</span>
-          <span>颜色记录</span><span>${colorText}</span>
-          <span>单双大小</span><span>${num % 2 ? "单" : "双"} / ${num >= 25 ? "大" : "小"}</span>
-        </div>
-      </div>`;
+      const recent = scopedRecords.slice(0, range).filter(r => r.special.num === num).length;
+      return { matched, lastIndex, last, recent, total: scopedRecords.length };
     }
 
-    function zodiacAnalysisCard(sx, range) {
-      const scopedRecords = getScopedRecords();
-      const nums = zodiacMap2026[sx] || [];
-      const matched = scopedRecords.filter(r => r.special.sx === sx);
-      const numberMatched = scopedRecords.filter(r => nums.includes(r.special.num));
-      const recentMatched = scopedRecords.slice(0, range).filter(r => r.special.sx === sx);
-      const lastIndex = scopedRecords.findIndex(r => r.special.sx === sx);
-      const last = matched[0];
-      const colorRows = countBy(matched, r => r.special.color);
-      const colorText = colorRows.length ? colorTagList(colorRows) : "无历史记录";
-      const hotNums = countBy(numberMatched, r => pad(r.special.num)).slice(0, 5).map(x => x[0] + "号" + x[1] + "次").join(" / ") || "无历史记录";
-      return `<div class="analysis-card">
-        <div class="toolbar" style="justify-content:space-between;">
-          <strong>${sx}</strong>
-          <span class="tag">生肖分析</span>
-        </div>
-        <div class="kv">
-          <span>拆解号码</span><span>${nums.map(n => pad(n)).join("、")}</span>
-          <span>${getSelectedYear()}年次数</span><span>${matched.length} 次</span>
-          <span>最近出现</span><span>${last ? last.period + " / " + last.date + " / " + last.special.raw : "从未出现"}</span>
-          <span>间隔期数</span><span>${lastIndex === -1 ? scopedRecords.length : lastIndex} 期</span>
-          <span>近期出现</span><span>最近 ${range} 期 ${recentMatched.length} 次</span>
-          <span>常见波色</span><span>${colorText}</span>
-          <span>拆号热度</span><span>${hotNums}</span>
-        </div>
-      </div>`;
+    function renderBetAdvice(plan, odds, roundLoss, targetProfit) {
+      const minAmount = Math.min(...plan.nums.map(num => plan.amountMap.get(num)));
+      const maxAmount = Math.max(...plan.nums.map(num => plan.amountMap.get(num)));
+      const requiredAmount = (roundLoss + plan.totalInput + targetProfit) / odds;
+      const losingNums = plan.nums.filter(num => plan.amountMap.get(num) * odds - plan.totalInput - roundLoss < 0);
+      const targetMissNums = plan.nums.filter(num => {
+        const pnl = plan.amountMap.get(num) * odds - plan.totalInput - roundLoss;
+        return pnl >= 0 && pnl < targetProfit;
+      });
+      const advice = [];
+      if (losingNums.length) {
+        advice.push(`有 ${losingNums.length} 个号码命中后仍不能覆盖投入和已亏损，主要是单号金额低于回本要求。`);
+      } else {
+        advice.push("当前组合下，任一号码命中都可以覆盖本期投入和已亏损。");
+      }
+      if (targetProfit > 0 && targetMissNums.length) {
+        advice.push(`有 ${targetMissNums.length} 个号码命中后未达到目标利润，可降低总投入、减少覆盖号码，或只保留更明确的重仓号码。`);
+      }
+      if (plan.duplicates.length) {
+        advice.push(`重复号码 ${plan.duplicates.length} 个，已自动合并金额；保留重复代表主动重仓，若不是刻意选择，可先剔除重复后再下注。`);
+      }
+      if (plan.heavyNums.length) {
+        advice.push(`重仓号码 ${plan.heavyNums.length} 个，最高单号金额 ${money(maxAmount)}，最低单号金额 ${money(minAmount)}，需要确认这些号码是否值得承担更高投入。`);
+      }
+      if (plan.nums.length > 32) {
+        advice.push("有效覆盖超过 32 个，覆盖面偏宽，容易出现命中但利润被总投入摊薄的情况。");
+      } else if (plan.nums.length <= 16) {
+        advice.push("有效覆盖在 16 个以内，属于少量号码方案，投入更集中，但容错空间也更小。");
+      } else {
+        advice.push("有效覆盖在 17-32 个之间，属于中等覆盖方案，需要重点看重复和重仓是否有明确理由。");
+      }
+      advice.push(`若希望命中即达到当前目标，单个命中号码金额至少约 ${money(requiredAmount)}。`);
+      document.getElementById("betAdvice").innerHTML = `
+        <strong>投注优化建议</strong>
+        <ul style="margin:8px 0 0; padding-left:18px;">
+          ${advice.map(item => `<li>${item}</li>`).join("")}
+        </ul>
+      `;
+    }
+
+    function renderSimulation() {
+      const odds = Number(document.getElementById("simulateOdds").value || 47);
+      const roundLoss = Number(document.getElementById("roundLoss").value || 0);
+      const targetProfit = Number(document.getElementById("targetProfit").value || 0);
+      const range = Number(document.getElementById("compareRange").value);
+      if (!odds || odds <= 0) throw new Error("赔率必须大于0");
+      const plan = parseBetPlan(document.getElementById("simulateInput").value);
+      const minAmount = Math.min(...plan.nums.map(num => plan.amountMap.get(num)));
+      const maxAmount = Math.max(...plan.nums.map(num => plan.amountMap.get(num)));
+      const minReward = minAmount * odds;
+      const maxReward = maxAmount * odds;
+      const requiredAmount = (roundLoss + plan.totalInput + targetProfit) / odds;
+      const rows = plan.nums.map(num => {
+        const amount = plan.amountMap.get(num);
+        const repeatCount = plan.countMap.get(num) || 0;
+        const reward = amount * odds;
+        const pnl = reward - plan.totalInput - roundLoss;
+        const targetPnl = pnl - targetProfit;
+        const ref = numberReference2026[num];
+        const history = getNumberHistory(num, range);
+        const isDuplicate = plan.duplicates.includes(num);
+        const state = pnl < 0 ? "中而不赚" : targetPnl < 0 ? "未达目标" : "可盈利";
+        const stateClass = state === "可盈利" ? "green" : state === "中而不赚" ? "red" : "blue";
+        return `<tr class="${isDuplicate || pnl < 0 ? "duplicate-row" : ""}">
+          <td>${pad(num)} ${isDuplicate ? `<span class="tag">重复</span>` : ""}</td>
+          <td>${ref ? ref.sx : "-"}</td>
+          <td>${ref ? colorTag(ref.color, ref.color + "波") : "-"}</td>
+          <td>${money(amount)}</td>
+          <td>${repeatCount}</td>
+          <td>${money(reward)}</td>
+          <td class="${pnl < 0 ? "danger-text" : "success-text"}">${money(pnl)}</td>
+          <td><span class="tag ${stateClass}">${state}</span></td>
+          <td>${history.last ? history.last.period + " / " + history.last.date : "从未出现"}</td>
+          <td>${history.lastIndex === -1 ? history.total : history.lastIndex}</td>
+          <td>${history.recent}</td>
+          <td>${history.matched.length}</td>
+        </tr>`;
+      });
+      const losingCount = plan.nums.filter(num => plan.amountMap.get(num) * odds - plan.totalInput - roundLoss < 0).length;
+      renderSummary("simulateSummary", [
+        { label: "总投入", value: money(plan.totalInput) },
+        { label: "有效覆盖", value: plan.nums.length + "个" },
+        { label: "原始注数", value: plan.rawCount + "注" },
+        { label: "重复号码", value: plan.duplicates.length + "个 " + numTags(plan.duplicates) },
+        { label: "重仓号码", value: plan.heavyNums.length + "个 " + numTags(plan.heavyNums) },
+        { label: "最低命中收益", value: money(minReward) },
+        { label: "最高命中收益", value: money(maxReward) },
+        { label: "中而不赚", value: losingCount + "个" },
+        { label: "回本需单号金额", value: money(requiredAmount) }
+      ]);
+      renderBetAdvice(plan, odds, roundLoss, targetProfit);
+      document.getElementById("simulateRows").innerHTML = rows.join("");
     }
 
     function renderReference() {
@@ -1392,44 +1606,6 @@
       }).join("");
     }
 
-    function renderCompare() {
-      const range = Number(document.getElementById("compareRange").value);
-      const parsed = parseAnalysisInput(document.getElementById("compareNumbers").value);
-      const directNums = parsed.numbers;
-      const expandedNums = parsed.zodiacs.flatMap(sx => zodiacMap2026[sx] || []);
-      const allInputNums = [...directNums, ...expandedNums];
-      const inputCount = new Map();
-      allInputNums.forEach(num => inputCount.set(num, (inputCount.get(num) || 0) + 1));
-      const duplicateNums = [...inputCount.entries()].filter(([, count]) => count > 1).map(([num]) => num).sort((a, b) => a - b);
-      const nums = [...new Set(allInputNums)].sort((a, b) => a - b);
-      const invalid = nums.filter(n => !Number.isInteger(n) || n < 1 || n > 49);
-      if (invalid.length) throw new Error("号码必须在 01-49 之间");
-      if (!nums.length) throw new Error("请输入 01-49 的号码，或输入鼠、牛、虎等生肖");
-      const scopedRecords = getScopedRecords();
-      document.getElementById("duplicateSummary").innerHTML = `
-        <div><strong>重复号码：</strong>${duplicateNums.length ? duplicateNums.map(n => `<span class="tag neutral">${pad(n)}</span>`).join(" ") : "无"}</div>
-        <div style="margin-top:8px;"><strong>剔除重复后的号码：</strong>${nums.map(n => `<span class="tag neutral">${pad(n)}</span>`).join(" ")}</div>
-      `;
-      document.getElementById("compareRows").innerHTML = nums.map(num => {
-        const matched = scopedRecords.filter(r => r.special.num === num);
-        const lastIndex = scopedRecords.findIndex(r => r.special.num === num);
-        const last = matched[0];
-        const recent = scopedRecords.slice(0, range).filter(r => r.special.num === num).length;
-        const ref = numberReference2026[num];
-        const isDuplicate = duplicateNums.includes(num);
-        return `<tr class="${isDuplicate ? "duplicate-row" : ""}">
-          <td>${pad(num)} ${isDuplicate ? `<span class="tag">重复</span>` : ""}</td>
-          <td>${ref ? ref.sx : "-"}</td>
-          <td>${ref ? colorTag(ref.color, ref.color + "波") : "-"}</td>
-          <td>${matched.length}</td>
-          <td>${last ? last.period + " / " + last.date : "从未出现"}</td>
-          <td>${lastIndex === -1 ? scopedRecords.length : lastIndex}</td>
-          <td>${recent}</td>
-          <td>${statusForNumber(matched.length, lastIndex, scopedRecords.length)}</td>
-        </tr>`;
-      }).join("");
-    }
-
     function upsertRecords(nextRecords) {
       const map = new Map(records.map(r => [recordKey(r), r]));
       nextRecords.forEach(r => map.set(recordKey(r), r));
@@ -1488,7 +1664,7 @@
       tab.addEventListener("click", () => {
         document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
         tab.classList.add("active");
-        ["dashboard", "records", "analysis", "compare", "streak", "monthly", "reference"].forEach(name => {
+        ["dashboard", "records", "simulate", "streak", "monthly", "reference"].forEach(name => {
           document.getElementById(name + "Panel").classList.toggle("hidden", tab.dataset.tab !== name);
         });
       });
@@ -1515,7 +1691,6 @@
       }
     });
 
-    document.getElementById("openAddModalBtn").addEventListener("click", openAddModal);
     document.getElementById("closeAddModalBtn").addEventListener("click", closeAddModal);
     document.getElementById("addModal").addEventListener("click", event => {
       if (event.target.id === "addModal") closeAddModal();
@@ -1524,24 +1699,15 @@
       if (event.key === "Escape") closeAddModal();
     });
 
-    document.getElementById("analyzeBtn").addEventListener("click", () => {
+    document.getElementById("simulateBtn").addEventListener("click", () => {
       try {
-        analyzeNumbers();
+        renderSimulation();
       } catch (error) {
-        document.getElementById("analysisResult").innerHTML = `<div class="danger-text">${error.message}</div>`;
+        document.getElementById("simulateSummary").innerHTML = `<div class="danger-text">${error.message}</div>`;
+        document.getElementById("betAdvice").innerHTML = "";
+        document.getElementById("simulateRows").innerHTML = "";
       }
     });
-
-    document.getElementById("compareBtn").addEventListener("click", () => {
-      try {
-        renderCompare();
-      } catch (error) {
-        document.getElementById("duplicateSummary").innerHTML = "";
-        document.getElementById("compareRows").innerHTML = `<tr><td colspan="8" class="danger-text">${error.message}</td></tr>`;
-      }
-    });
-
-    document.getElementById("updateDataBtn").addEventListener("click", updateFromSource);
 
     document.getElementById("recordSearch").addEventListener("input", renderRecords);
 
@@ -1557,7 +1723,7 @@
     });
 
     document.getElementById("resetBtn").addEventListener("click", () => {
-      if (!confirm("确认恢复初始 145 条数据吗？当前本地修改会被覆盖。")) return;
+      if (!confirm("确认恢复初始 150 条数据吗？当前本地修改会被覆盖。")) return;
       records = parseCsv(seedCsv);
       saveRecords();
       render();
@@ -1578,8 +1744,6 @@
     });
 
     render();
-    document.getElementById("buyNumbers").value = "07, 01, 45";
-    analyzeNumbers();
   </script>
 </body>
 </html>
