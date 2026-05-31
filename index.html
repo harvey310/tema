@@ -138,6 +138,34 @@
 	      font-size: 13px;
 	      white-space: nowrap;
 	    }
+	    .header-actions {
+	      display: flex;
+	      gap: 8px;
+	      align-items: center;
+	      flex: 0 0 auto;
+	    }
+	    .version-button {
+	      min-height: 32px;
+	      height: 32px;
+	      flex: 0 0 auto;
+	      padding: 4px 10px;
+	      border-color: #91caff;
+	      background: #e6f4ff;
+	      color: #0958d9;
+	      font-size: 13px;
+	      white-space: nowrap;
+	    }
+	    .version-popover {
+	      display: none;
+	      width: 100%;
+	      padding: 10px;
+	      border: 1px solid #d9d9d9;
+	      border-radius: 8px;
+	      background: #fff;
+	    }
+	    .version-popover.open {
+	      display: block;
+	    }
     .tabs {
       display: flex;
       gap: 8px;
@@ -765,32 +793,37 @@
 	  <header>
 	    <div class="header-row">
 	      <h1>分析看板</h1>
-	      <button id="resetBtn" class="reset-small">恢复</button>
+	      <div class="header-actions">
+	        <button id="versionBtn" class="version-button">版本信息</button>
+	        <button id="resetBtn" class="reset-small">恢复</button>
+	      </div>
 	    </div>
-	    <div class="data-strip">
-	      <span class="tag neutral">版本 2026-05-30-data150</span>
+	    <div id="versionInfo" class="version-popover">
+	      <span class="tag neutral">版本 2026-05-31-data151</span>
 	      <span class="tag" id="dataStatus">本地数据</span>
 	    </div>
 	  </header>
 
-  <main>
-    <div class="notice">本工具只基于历史记录做统计分析，不承诺中奖，也不保证任何号码未来会出现。</div>
-    <div id="updateMsg" class="footer-note"></div>
-    <section class="layout">
-      <div class="grid">
-        <div class="grid cards" id="metrics"></div>
-
-        <div class="card">
-          <div class="tabs">
-            <button class="tab active" data-tab="simulate">投注分析</button>
-            <button class="tab" data-tab="dashboard">趋势看板</button>
+	  <main>
+	    <div id="updateMsg" class="footer-note"></div>
+	    <section class="layout">
+	      <div class="grid">
+	        <div class="card">
+	          <div class="tabs">
+	            <button class="tab active" data-tab="simulate">投注分析</button>
+	            <button class="tab" data-tab="basic">基础信息</button>
+	            <button class="tab" data-tab="dashboard">趋势看板</button>
             <button class="tab" data-tab="records">开奖记录</button>
             <button class="tab" data-tab="streak">连续走势</button>
             <button class="tab" data-tab="monthly">月度统计</button>
-            <button class="tab" data-tab="reference">号码参考</button>
-          </div>
+	            <button class="tab" data-tab="reference">号码参考</button>
+	          </div>
 
-          <div id="dashboardPanel" class="hidden">
+	          <div id="basicPanel" class="hidden">
+	            <div class="grid cards" id="metrics"></div>
+	          </div>
+
+	          <div id="dashboardPanel" class="hidden">
             <div class="grid two">
               <div>
                 <h3>特码号码热度</h3>
@@ -981,6 +1014,7 @@
 
   <script>
     const seedCsv = `期号,开奖时间,平一,平二,平三,平四,平五,平六,特码
+151期,2026-05-31,27龙(绿),15龙(蓝),29虎(红),42牛(蓝),20猪(蓝),41虎(蓝),31鼠(蓝)
 150期,2026-05-30,11猴(绿),04兔(蓝),22鸡(绿),25马(蓝),44猪(绿),19鼠(红),09狗(蓝)
 149期,2026-05-29,28兔(绿),30牛(红),44猪(绿),45狗(红),04兔(蓝),20猪(蓝),27龙(绿)
 148期,2026-05-28,28兔(绿),24羊(红),31鼠(蓝),23猴(红),04兔(蓝),27龙(绿),48羊(蓝)
@@ -1785,10 +1819,14 @@
       tab.addEventListener("click", () => {
         document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
         tab.classList.add("active");
-        ["dashboard", "records", "simulate", "streak", "monthly", "reference"].forEach(name => {
+        ["simulate", "basic", "dashboard", "records", "streak", "monthly", "reference"].forEach(name => {
           document.getElementById(name + "Panel").classList.toggle("hidden", tab.dataset.tab !== name);
         });
       });
+    });
+
+    document.getElementById("versionBtn").addEventListener("click", () => {
+      document.getElementById("versionInfo").classList.toggle("open");
     });
 
     document.getElementById("addForm").addEventListener("submit", event => {
@@ -1844,7 +1882,7 @@
     });
 
     document.getElementById("resetBtn").addEventListener("click", () => {
-      if (!confirm("确认恢复初始 150 条数据吗？当前本地修改会被覆盖。")) return;
+      if (!confirm("确认恢复初始 151 条数据吗？当前本地修改会被覆盖。")) return;
       records = parseCsv(seedCsv);
       saveRecords();
       render();
