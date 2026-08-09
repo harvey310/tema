@@ -15,6 +15,6 @@ export default defineConfig({
     }))
   ],
   test: {
-    exclude: ["test-node/**", "node_modules/**"]
+    exclude: ["test-node/**", "cloudflare-combinations/**", "node_modules/**"]
   }
 });
