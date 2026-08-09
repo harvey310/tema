@@ -957,6 +957,7 @@
           <div id="combinationsPanel" class="hidden">
             <h2>组合聚合</h2>
             <div class="notice" id="combinationNotice">加载中</div>
+            <div class="record-actions"><button id="manualCombinationCrawl" class="primary" type="button">手动采集最新组合</button></div>
             <div class="form-row">
               <div><label for="combinationDate">采集日期</label><input id="combinationDate" type="date"></div>
               <div><label for="combinationRange">统计周期</label><select id="combinationRange"><option value="7">近 7 天</option><option value="30">近 30 天</option></select></div>
@@ -1514,6 +1515,7 @@
     }
 
     let combinationData = null;
+    const combinationApiBase = 'https://tema-combination-collector.whuxwy.workers.dev';
     function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]); }
     function countItems(records, key) {
       const counts = new Map();
@@ -1528,7 +1530,7 @@
     async function loadCombinationData() {
       const date = document.getElementById('combinationDate').value || new Date().toISOString().slice(0, 10);
       try {
-        const response = await fetch('https://tema-combination-collector.whuxwy.workers.dev/api/combinations?date=' + encodeURIComponent(date));
+        const response = await fetch(combinationApiBase + '/api/combinations?date=' + encodeURIComponent(date));
         if (!response.ok) throw new Error('实时接口不可用');
         combinationData = await response.json();
         combinationData.demo = false;
@@ -1555,6 +1557,24 @@
       renderBars('combinationNumberOverlap', overlapItems(records, 'numbers').map(row => [row.item, row.moduleCount]).slice(0, 12), '个模块');
       if (!overlapItems(records, 'zodiacs').length) document.getElementById('combinationZodiacOverlap').innerHTML = '<span class="muted">暂无跨模块重合生肖</span>';
       if (!overlapItems(records, 'numbers').length) document.getElementById('combinationNumberOverlap').innerHTML = '<span class="muted">暂无跨模块重合号码</span>';
+    }
+    const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+    async function manualCrawlCombinations() {
+      const button = document.getElementById('manualCombinationCrawl');
+      button.disabled = true;
+      button.textContent = '采集中';
+      document.getElementById('combinationNotice').textContent = '已开始采集最新组合，页面会自动刷新结果。';
+      try {
+        const response = await fetch(combinationApiBase + '/api/combinations/crawl', { method: 'POST' });
+        if (!response.ok) throw new Error('采集请求未被接受');
+        await wait(5000);
+        await loadCombinationData();
+      } catch (error) {
+        document.getElementById('combinationNotice').textContent = `手动采集未启动：${error instanceof Error ? error.message : '未知错误'}`;
+      } finally {
+        button.disabled = false;
+        button.textContent = '手动采集最新组合';
+      }
     }
 
     function renderRecords() {
@@ -2080,6 +2100,7 @@
 
     document.getElementById('combinationDate').addEventListener('change', loadCombinationData);
     document.getElementById('combinationRange').addEventListener('change', renderCombinations);
+    document.getElementById('manualCombinationCrawl').addEventListener('click', manualCrawlCombinations);
 
     render();
   </script>
