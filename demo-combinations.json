@@ -1,0 +1,12 @@
+{
+  "demo": true,
+  "date": "2026-08-09",
+  "records": [
+    {"sourceKey":"meihouwang_wuxiao","sourceLabel":"美猴王五肖","periodRange":"221-222期","zodiacs":["牛","龙","兔","鼠","猪"],"numbers":["10","36"],"status":"success_http","capturedAt":"2026-08-09T11:00:10Z","evidence":"美猴王 五肖②码二期内必开 牛龙兔鼠猪+10.36","error":""},
+    {"sourceKey":"liuxiao","sourceLabel":"六肖","periodRange":"219-221期","zodiacs":["猪","鸡","狗","羊","马","鼠"],"numbers":[],"status":"success_http","capturedAt":"2026-08-09T11:00:15Z","evidence":"214444.com【三期必开】 猪鸡狗羊马鼠","error":""},
+    {"sourceKey":"tiesuanpan_20ma","sourceLabel":"铁算盘20码","periodRange":"209-211期","zodiacs":[],"numbers":["06","11","17","18","22","23","24","25","29","34","35","37","39","40","41","42","45","46","47","49"],"status":"success_browser","capturedAt":"2026-08-09T11:00:25Z","evidence":"457777.com【必开20码】 06 11 17 18 22 23 24 25 29 34 35 37 39 40 41 42 45 46 47 49","error":""},
+    {"sourceKey":"dasamba_sixiao","sourceLabel":"大三巴四肖","periodRange":"219-221期","zodiacs":["兔","羊","牛","虎"],"numbers":[],"status":"success_http","capturedAt":"2026-08-09T11:00:31Z","evidence":"380000.com【三期必开】内幕泄密 必中 兔羊牛虎","error":""},
+    {"sourceKey":"danshuang_sanhao","sourceLabel":"单双散号","periodRange":"209-211期","zodiacs":[],"numbers":["09","13","15","19","25","31","39","43","08","10","22","26","32","34","38","40"],"status":"success_http","capturedAt":"2026-08-09T11:00:40Z","evidence":"149.com《单双⑧码》 单：09.13.15.19.25.31.39.43 双：08.10.22.26.32.34.38.40","error":""},
+    {"sourceKey":"shiliu_sanhao","sourceLabel":"16散号","periodRange":"178-180期","zodiacs":[],"numbers":["04","08","09","13","15","16","27","28","34","36","37","38","41","44","45","47"],"status":"success_browser","capturedAt":"2026-08-09T11:00:51Z","evidence":"149.com三期【⑯码必出】来财好项目 04 08 09 13 15 16 27 28 34 36 37 38 41 44 45 47","error":""}
+  ]
+}
