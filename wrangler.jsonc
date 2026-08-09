@@ -12,7 +12,7 @@
     {
       "binding": "DB",
       "database_name": "tema-db",
-      "database_id": "local-tema-db",
+      "database_id": "f9abd056-918e-4e7b-99f1-7bb1fdd7ba0d",
       "migrations_dir": "migrations"
     }
   ]
