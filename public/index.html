@@ -811,6 +811,7 @@
 	        <div class="card">
 	          <div class="tabs">
 	            <button class="tab active" data-tab="simulate">投注分析</button>
+	            <button class="tab" data-tab="combinations">组合聚合</button>
 	            <button class="tab" data-tab="basic">基础信息</button>
 	            <button class="tab" data-tab="dashboard">趋势看板</button>
             <button class="tab" data-tab="records">开奖记录</button>
@@ -818,6 +819,20 @@
             <button class="tab" data-tab="monthly">月度统计</button>
 	            <button class="tab" data-tab="reference">号码参考</button>
 	          </div>
+
+          <div id="combinationsPanel" class="hidden">
+            <h2>组合聚合</h2>
+            <div class="notice" id="combinationNotice">加载中</div>
+            <div class="record-actions"><button id="manualCombinationCrawl" class="primary" type="button">手动采集最新组合</button></div>
+            <div class="form-row">
+              <div><label for="combinationDate">采集日期</label><input id="combinationDate" type="date"></div>
+              <div><label for="combinationRange">统计周期</label><select id="combinationRange"><option value="7">近 7 天</option><option value="30">近 30 天</option></select></div>
+            </div>
+            <div class="analysis-grid" id="combinationMetrics"></div>
+            <h3 style="margin-top:18px;">当日组合</h3>
+            <div class="table-wrap"><table><thead><tr><th>来源</th><th>覆盖期号</th><th>组合</th><th>方式</th><th>状态</th><th>证据</th></tr></thead><tbody id="combinationRows"></tbody></table></div>
+            <div class="grid two" style="margin-top:18px;"><div><h3>生肖重合</h3><div id="combinationZodiacOverlap"></div></div><div><h3>号码重合</h3><div id="combinationNumberOverlap"></div></div></div>
+          </div>
 
 	          <div id="basicPanel" class="hidden">
 	            <div class="grid cards" id="metrics"></div>
@@ -970,6 +985,20 @@
           <input id="adminPassword" type="password" inputmode="numeric" minlength="4" maxlength="4" pattern="[0-9]{4}" autocomplete="current-password" required>
           <button class="primary" style="width:100%;margin-top:12px;">验证并更新</button>
           <div id="adminLoginMsg" class="muted" style="margin-top:10px;"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="combinationPasswordModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="combinationPasswordTitle">
+      <div class="modal-header"><h2 id="combinationPasswordTitle">进入组合聚合</h2></div>
+      <div class="modal-body">
+        <form id="combinationPasswordForm">
+          <label for="combinationPasswordInput">访问密码</label>
+          <input id="combinationPasswordInput" type="password" inputmode="numeric" autocomplete="current-password" required>
+          <div id="combinationPasswordMessage" class="muted" style="margin-top:8px;"></div>
+          <div class="record-actions"><button type="button" id="cancelCombinationPassword">取消</button><button class="primary" type="submit">进入</button></div>
         </form>
       </div>
     </div>
@@ -1198,6 +1227,117 @@
           <span>${count}${suffix}</span>
         </div>
       `).join("");
+    }
+
+    const combinationApiBase = "https://tema-combination-collector.whuxwy.workers.dev";
+    const combinationApi = `${combinationApiBase}/api/combinations`;
+    const combinationPassword = "0775";
+    let combinationData = null;
+    let combinationSummary = null;
+    let combinationUnlocked = sessionStorage.getItem("tema-combination-unlocked") === "1";
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", "\"": "&quot;" })[char]);
+    }
+
+    function countCombinationItems(records, key) {
+      const counts = new Map();
+      records.filter(record => record.status !== "failed").forEach(record => {
+        (record[key] || []).forEach(item => counts.set(item, (counts.get(item) || 0) + 1));
+      });
+      return [...counts].map(([item, count]) => ({ item, count })).sort((a, b) => b.count - a.count || a.item.localeCompare(b.item, "zh-CN"));
+    }
+
+    function findCombinationOverlap(records, key) {
+      const sources = new Map();
+      records.filter(record => record.status !== "failed").forEach(record => {
+        (record[key] || []).forEach(item => {
+          if (!sources.has(item)) sources.set(item, new Set());
+          sources.get(item).add(record.sourceKey);
+        });
+      });
+      return [...sources].filter(([, sourceKeys]) => sourceKeys.size >= 2)
+        .map(([item, sourceKeys]) => ({ item, moduleCount: sourceKeys.size }))
+        .sort((a, b) => b.moduleCount - a.moduleCount || a.item.localeCompare(b.item, "zh-CN"));
+    }
+
+    async function loadCombinationData() {
+      const dateInput = document.getElementById("combinationDate");
+      const range = document.getElementById("combinationRange").value;
+      const date = dateInput.value || new Date().toISOString().slice(0, 10);
+      try {
+        const [dailyResponse, summaryResponse] = await Promise.all([
+          fetch(`${combinationApi}?date=${encodeURIComponent(date)}`),
+          fetch(`${combinationApi}/summary?days=${encodeURIComponent(range)}`)
+        ]);
+        if (!dailyResponse.ok || !summaryResponse.ok) throw new Error("实时接口不可用");
+        combinationData = { ...(await dailyResponse.json()), demo: false };
+        combinationSummary = await summaryResponse.json();
+      } catch (_) {
+        combinationData = await fetch("/demo-combinations.json").then(response => {
+          if (!response.ok) throw new Error("演示数据不可用");
+          return response.json();
+        });
+        combinationSummary = {
+          days: Number(range),
+          zodiacOverlap: findCombinationOverlap(combinationData.records || [], "zodiacs"),
+          numberOverlap: findCombinationOverlap(combinationData.records || [], "numbers")
+        };
+      }
+      dateInput.value = combinationData.date || date;
+      renderCombinations();
+    }
+
+    function renderCombinations() {
+      if (!combinationData) return;
+      const records = combinationData.records || [];
+      const successful = records.filter(record => record.status !== "failed").length;
+      const zodiacs = countCombinationItems(records, "zodiacs");
+      const numbers = countCombinationItems(records, "numbers");
+      document.getElementById("combinationNotice").textContent = combinationData.demo
+        ? "采集接口暂不可用，以下为明确标注的演示数据，不是实时抓取结果。"
+        : "实时采集数据：仅展示通过字段校验的组合；失败记录不会用旧数据替代。";
+      document.getElementById("combinationMetrics").innerHTML = [
+        metric("采集模块", `${successful} / ${records.length}`, "成功 / 总数"),
+        metric("失败模块", records.length - successful, "可在明细中查看原因"),
+        metric("生肖项", zodiacs.length, "当日不同生肖"),
+        metric("号码项", numbers.length, "当日不同号码")
+      ].join("");
+      document.getElementById("combinationRows").innerHTML = records.map(record => {
+        const items = [...(record.zodiacs || []), ...(record.numbers || [])].join("、") || "-";
+        const method = record.status === "success_browser" ? "浏览器兜底" : record.status === "success_http" ? "HTTP" : "-";
+        const status = record.status === "failed" ? '<span class="danger-text">失败</span>' : '<span class="success-text">成功</span>';
+        const proof = record.status === "failed"
+          ? escapeHtml(record.error || "未提供原因")
+          : `<details><summary>查看</summary><div class="muted">${escapeHtml(record.evidence || "")}</div></details>`;
+        return `<tr><td>${escapeHtml(record.sourceLabel)}</td><td>${escapeHtml(record.periodRange || "-")}</td><td>${escapeHtml(items)}</td><td>${method}</td><td>${status}</td><td>${proof}</td></tr>`;
+      }).join("") || '<tr><td colspan="6" class="muted">该日期暂无已验证采集记录</td></tr>';
+      const zodiacOverlap = combinationSummary?.zodiacOverlap || [];
+      const numberOverlap = combinationSummary?.numberOverlap || [];
+      renderBars("combinationZodiacOverlap", zodiacOverlap.map(row => [row.item, row.moduleCount]).slice(0, 12), "个模块");
+      renderBars("combinationNumberOverlap", numberOverlap.map(row => [row.item, row.moduleCount]).slice(0, 12), "个模块");
+      if (!zodiacOverlap.length) document.getElementById("combinationZodiacOverlap").innerHTML = '<span class="muted">统计周期内暂无跨模块重合生肖</span>';
+      if (!numberOverlap.length) document.getElementById("combinationNumberOverlap").innerHTML = '<span class="muted">统计周期内暂无跨模块重合号码</span>';
+    }
+
+    const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+
+    async function manualCrawlCombinations() {
+      const button = document.getElementById("manualCombinationCrawl");
+      button.disabled = true;
+      button.textContent = "采集中";
+      document.getElementById("combinationNotice").textContent = "已开始采集最新组合，页面会自动刷新结果。";
+      try {
+        const response = await fetch(`${combinationApiBase}/api/combinations/crawl`, { method: "POST" });
+        if (!response.ok) throw new Error("采集请求未被接受");
+        await wait(5000);
+        await loadCombinationData();
+      } catch (error) {
+        document.getElementById("combinationNotice").textContent = `手动采集未启动：${error instanceof Error ? error.message : "未知错误"}`;
+      } finally {
+        button.disabled = false;
+        button.textContent = "手动采集最新组合";
+      }
     }
 
     function renderColorBars(id, rows, suffix = "次") {
@@ -1635,15 +1775,51 @@
       document.getElementById("addModal").setAttribute("aria-hidden", "true");
     }
 
+    function activateTab(tabName) {
+      document.querySelectorAll(".tab").forEach(tab => tab.classList.toggle("active", tab.dataset.tab === tabName));
+      ["simulate", "combinations", "basic", "dashboard", "records", "streak", "monthly", "reference"].forEach(name => {
+        document.getElementById(name + "Panel").classList.toggle("hidden", tabName !== name);
+      });
+      if (tabName === "combinations") loadCombinationData().catch(error => {
+        document.getElementById("combinationNotice").textContent = "组合数据加载失败：" + error.message;
+      });
+    }
+
+    function showCombinationPasswordModal() {
+      document.getElementById("combinationPasswordMessage").textContent = "";
+      document.getElementById("combinationPasswordInput").value = "";
+      document.getElementById("combinationPasswordModal").classList.add("open");
+      document.getElementById("combinationPasswordModal").setAttribute("aria-hidden", "false");
+      document.getElementById("combinationPasswordInput").focus();
+    }
+
+    function closeCombinationPasswordModal() {
+      document.getElementById("combinationPasswordModal").classList.remove("open");
+      document.getElementById("combinationPasswordModal").setAttribute("aria-hidden", "true");
+    }
+
     document.querySelectorAll(".tab").forEach(tab => {
       tab.addEventListener("click", () => {
-        document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
-        tab.classList.add("active");
-        ["simulate", "basic", "dashboard", "records", "streak", "monthly", "reference"].forEach(name => {
-          document.getElementById(name + "Panel").classList.toggle("hidden", tab.dataset.tab !== name);
-        });
+        if (tab.dataset.tab === "combinations" && !combinationUnlocked) {
+          showCombinationPasswordModal();
+          return;
+        }
+        activateTab(tab.dataset.tab);
       });
     });
+
+    document.getElementById("combinationPasswordForm").addEventListener("submit", event => {
+      event.preventDefault();
+      if (document.getElementById("combinationPasswordInput").value !== combinationPassword) {
+        document.getElementById("combinationPasswordMessage").textContent = "密码不正确，请重试。";
+        return;
+      }
+      combinationUnlocked = true;
+      sessionStorage.setItem("tema-combination-unlocked", "1");
+      closeCombinationPasswordModal();
+      activateTab("combinations");
+    });
+    document.getElementById("cancelCombinationPassword").addEventListener("click", closeCombinationPasswordModal);
 
     document.getElementById("versionBtn").addEventListener("click", () => {
       document.getElementById("versionInfo").classList.toggle("open");
@@ -1708,6 +1884,7 @@
       if (event.key === "Escape") {
         closeAddModal();
         closeAdminLogin();
+        closeCombinationPasswordModal();
       }
     });
 
@@ -1722,6 +1899,13 @@
     });
 
     document.getElementById("recordSearch").addEventListener("input", renderRecords);
+    document.getElementById("combinationDate").addEventListener("change", () => loadCombinationData().catch(error => {
+      document.getElementById("combinationNotice").textContent = "组合数据加载失败：" + error.message;
+    }));
+    document.getElementById("combinationRange").addEventListener("change", () => loadCombinationData().catch(error => {
+      document.getElementById("combinationNotice").textContent = "组合数据加载失败：" + error.message;
+    }));
+    document.getElementById("manualCombinationCrawl").addEventListener("click", manualCrawlCombinations);
 
     document.getElementById("exportBtn").addEventListener("click", () => {
       const scopedRecords = getScopedRecords();

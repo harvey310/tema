@@ -8,6 +8,7 @@
 - `src/records.js`：查询 D1、人工新增、同步写入和记录同步日志。
 - `src/http-error.js`：定义可以安全返回给前端的 HTTP 错误。
 - `public/index.html`：分析看板，通过同源 API 加载共享数据并触发管理员操作。
+- `public/demo-combinations.json`：组合采集接口暂不可用时使用的明确演示数据。
 - `migrations/0001_initial.sql`：D1 表和索引。
 - `migrations/0002_seed_2026.sql`：220 条初始开奖记录。
 - `scripts/extract-seed.mjs`：从旧页面的 `seedCsv` 生成确定性的 D1 初始化 SQL。
@@ -25,6 +26,9 @@ public/index.html
           → src/auth.js
           → src/sync.js → 外部开奖源
           → src/records.js → Cloudflare D1
+  → tema-combination-collector Worker
+      → /api/combinations、/api/combinations/summary、/api/combinations/crawl
+      → 组合采集 D1
 ```
 
 ## 关键决定
@@ -34,3 +38,4 @@ public/index.html
 3. 管理员密码只通过 Cloudflare Secret 注入，仓库只保存认证逻辑。
 4. 抓取数据全部校验后再批量写入；历史同一期内容不一致时不覆盖。
 5. GitHub 保存代码，D1 保存业务数据；手动同步不再修改或提交 HTML。
+6. 组合采集维持独立 Worker，主页面只读取其公开查询接口；手动采集由组合 TAB 触发，失败状态原样展示。

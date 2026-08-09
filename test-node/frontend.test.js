@@ -26,3 +26,17 @@ test("页面通过同源 API 更新而不是直接访问源站", () => {
   assert.match(html, /\/api\/admin\/sync/);
   assert.doesNotMatch(html, /fetch\(dataSourceUrl/);
 });
+
+test("页面合并组合聚合入口并读取已部署采集接口", () => {
+  assert.match(html, /data-tab="combinations"/);
+  assert.match(html, /id="combinationsPanel"/);
+  assert.match(html, /tema-combination-collector\.whuxwy\.workers\.dev/);
+  assert.match(html, /const combinationApi = `\$\{combinationApiBase\}\/api\/combinations`/);
+  assert.match(html, /id="combinationPasswordModal"/);
+  assert.match(html, /id="manualCombinationCrawl"/);
+  assert.match(html, /\/api\/combinations\/crawl/);
+});
+
+test("组合聚合统计周期使用远端汇总接口", () => {
+  assert.match(html, /combinationApi\}\/summary\?days=/);
+});

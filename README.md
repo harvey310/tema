@@ -4,11 +4,14 @@ Tema 是一个部署在 Cloudflare Workers 上的澳门开奖记录分析看板�
 
 管理员输入四位密码后，可以在页面点击“更新数据”。服务端会抓取、校验并同步最新开奖记录；浏览器不直接访问源站，也不保存正式开奖记录。
 
+页面第二个 TAB 为“组合聚合”。输入项目既有访问密码后，可查看已部署采集 Worker 的当日结果、近 7/30 天重合统计，并可手动触发一次最新组合采集。采集失败会明确展示失败原因，不会以旧数据冒充实时结果。
+
 ## 技术结构
 
 - Cloudflare Worker：页面托管、API、管理员认证和抓取同步。
 - Workers Static Assets：托管 `public/index.html`。
 - Cloudflare D1：保存开奖记录、同步日志和登录失败记录。
+- Cloudflare 组合采集 Worker：提供组合明细、7/30 天汇总和手动采集接口。
 - Cloudflare Secrets：保存管理员密码和会话签名密钥。
 - Vitest + Cloudflare Workers 测试池：验证 Worker 运行时、D1 和接口。
 
